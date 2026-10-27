@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   Plus, LayoutGrid, Move, MousePointer,
   UserPlus, X, Trash2, Grid, HelpCircle, AlertTriangle, Printer, Copy,
-  ArrowRight, ArrowLeft, CheckCircle2
+  ArrowRight, ArrowLeft, CheckCircle2, Lock
 } from 'lucide-react';
 
 export interface Student {
@@ -41,12 +41,16 @@ export default function App() {
   const [newClassName, setNewClassName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
 
-  // Veilednings-modal midt på skjermen for nybegynnere
+  // Veiledning-modal state
   const [showTutorial, setShowTutorial] = useState<boolean>(() => {
     const seen = localStorage.getItem('klassekart_seen_tutorial');
     return seen !== 'true';
   });
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [isInteractiveTutorial, setIsInteractiveTutorial] = useState<boolean>(() => {
+    const seen = localStorage.getItem('klassekart_seen_tutorial');
+    return seen !== 'true';
+  });
 
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -211,6 +215,7 @@ export default function App() {
     saveClassesToBackend([]);
     setSelectedClassId(null);
     localStorage.clear();
+    setIsInteractiveTutorial(true);
     setShowTutorial(true);
     setTutorialStep(0);
   };
@@ -389,26 +394,44 @@ export default function App() {
       icon: <LayoutGrid size={48} color="#2563eb" />
     },
     {
-      title: "Steg 1: Lag en klasse og legg til elever 📝",
-      desc: "Se helt til venstre på skjermen:\n\n1. Klikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n3. Skriv inn navnet på en elev like under, og trykk på den grønne knappen for å legge til eleven i listen.",
+      title: "Steg 1: Lag en klasse 📝",
+      desc: "Se helt til venstre på skjermen:\n\n1. Klikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <UserPlus size={48} color="#059669" />
     },
     {
-      title: "Steg 2: Bygg og koble sammen pulter 🪑",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Bygg / Flytt Pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hold venstre museknapp inne på pulten og dra den dit du vil ha den.\n4. Hvis du drar to eller flere pulter helt inntil hverandre, kobler de seg automatisk sammen (merger) til en større pultgruppe med rette kanter!",
+      title: "Steg 2: Legg til en elev 👤",
+      desc: "Se i sidepanelet til venstre under elevlisten:\n\n1. Skriv inn navnet på en elev.\n2. Trykk på den grønne knappen for å legge eleven til i listen.\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      icon: <UserPlus size={48} color="#059669" />
+    },
+    {
+      title: "Steg 3: Bygg pulter 🪑",
+      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Bygg / Flytt Pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <Move size={48} color="#2563eb" />
     },
     {
-      title: "Steg 3: Sette elever på pultene 👤",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Plassér Elever'.\n2. Klikk med musa på en pult ute på kartet.\n3. Det dukker opp en hvit boks til høyre på skjermen. Klikk på navnet til eleven som skal sitte på denne pulten.",
+      title: "Steg 4: Sette elev på pult 👤",
+      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Plassér Elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <MousePointer size={48} color="#d97706" />
     },
     {
-      title: "Steg 4: Skriv ut eller lagre PDF 🖨️",
-      desc: "Når du er ferdig med å plassere alle elever:\n\n1. Klikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Da får du opp en stor visning hvor du kan trykke på knappen for å skrive ut arket på en fysisk skriver.",
+      title: "Steg 5: Skriv ut eller lagre PDF 🖨️",
+      desc: "Når du er ferdig med å plassere elever:\n\n1. Klikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Der kan du skrive ut arket på en fysisk skriver.",
       icon: <Printer size={48} color="#7c3aed" />
     }
   ];
+
+  const isCurrentStepCompleted = () => {
+    if (!isInteractiveTutorial) return true;
+    if (tutorialStep === 0) return true;
+    if (tutorialStep === 1) return classes.length > 0;
+    if (tutorialStep === 2) return currentClass ? currentClass.students.length > 0 : false;
+    if (tutorialStep === 3) return currentChart ? currentChart.blocks.length > 0 : false;
+    if (tutorialStep === 4) return currentChart ? currentChart.blocks.some(b => b.student_id !== null) : false;
+    if (tutorialStep === 5) return true;
+    return true;
+  };
+
+  const isSideStep = tutorialStep === 3 || tutorialStep === 4;
 
   return (
     <>
@@ -438,13 +461,17 @@ export default function App() {
       <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
 
         {/* SIDEBAR */}
-        <div style={{ width: '300px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '300px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <LayoutGrid size={24} /> Klassekart
             </div>
             <button
-              onClick={() => { setShowTutorial(true); setTutorialStep(0); }}
+              onClick={() => {
+                setIsInteractiveTutorial(false);
+                setTutorialStep(0);
+                setShowTutorial(true);
+              }}
               style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               title="Hjelp og veiledning"
             >
@@ -453,17 +480,17 @@ export default function App() {
           </div>
 
           {/* Klasser */}
-          <div style={{ padding: '14px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Velg Klasse</div>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
               <input
                 type="text"
                 placeholder="F.eks. 10B..."
                 value={newClassName}
                 onChange={(e) => setNewClassName(e.target.value)}
-                style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none' }}
+                style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
               />
-              <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
+              <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Ny klasse
               </button>
             </div>
@@ -489,15 +516,15 @@ export default function App() {
 
           {/* Elevliste */}
           {currentClass && (
-            <div style={{ padding: '14px', flex: 1, overflowY: 'auto' }}>
+            <div style={{ padding: '14px 16px', flex: 1, overflowY: 'auto' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Elevliste ({currentClass.students.length})</div>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <input
                   type="text"
                   placeholder="Elevens navn..."
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
-                  style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none' }}
+                  style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
                 />
                 <button onClick={handleAddStudent} style={{ backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 700 }}>
                   <UserPlus size={16} />
@@ -518,7 +545,7 @@ export default function App() {
           )}
 
           {/* Slett all appdata */}
-          <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
             <button
               onClick={handleWipeAllAppData}
               style={{ width: '100%', backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
@@ -753,11 +780,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* VEILEDNINGS-MODAL MIDT PÅ SKJERMEN */}
+        {/* INTERAKTIV VEILEDNINGS-MODAL */}
         {showTutorial && (
-          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', width: '550px', maxWidth: '90vw', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', position: 'relative' }}>
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: isSideStep ? 'flex-start' : 'center', paddingLeft: isSideStep ? '40px' : '0px', zIndex: 200, transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', width: '500px', maxWidth: '90vw', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', position: 'relative', pointerEvents: 'auto', border: '1px solid #cbd5e1', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
+              {/* Lukk-kryss */}
               <button
                 onClick={() => {
                   setShowTutorial(false);
@@ -780,6 +808,13 @@ export default function App() {
                 {tutorialSteps[tutorialStep].desc}
               </div>
 
+              {/* Statusmelding hvis låst */}
+              {isInteractiveTutorial && !isCurrentStepCompleted() && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px', backgroundColor: '#fef3c7', padding: '8px 12px', borderRadius: '8px', width: '100%', justifyContent: 'center' }}>
+                  <Lock size={15} /> Utfør handlingen i appen for å låse opp neste knappen!
+                </div>
+              )}
+
               {/* Fremgangspunkter */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
                 {tutorialSteps.map((_, idx) => (
@@ -796,8 +831,8 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Navigasjonsknapper */}
-              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: '12px' }}>
+              {/* Navigasjonsknapper og Hopp over-knapp */}
+              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
                 <button
                   onClick={() => setTutorialStep(prev => Math.max(0, prev - 1))}
                   disabled={tutorialStep === 0}
@@ -810,9 +845,27 @@ export default function App() {
 
                 {tutorialStep < tutorialSteps.length - 1 ? (
                   <button
-                    onClick={() => setTutorialStep(prev => prev + 1)}
+                    onClick={() => {
+                      if (isCurrentStepCompleted()) {
+                        setTutorialStep(prev => prev + 1);
+                      }
+                    }}
+                    disabled={isInteractiveTutorial && !isCurrentStepCompleted()}
                     style={{
-                      flex: 1, backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                      flex: 1,
+                      backgroundColor: isInteractiveTutorial && !isCurrentStepCompleted() ? '#94a3b8' : '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '12px',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      cursor: isInteractiveTutorial && !isCurrentStepCompleted() ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      opacity: isInteractiveTutorial && !isCurrentStepCompleted() ? 0.6 : 1
                     }}
                   >
                     Neste <ArrowRight size={16} />
@@ -831,6 +884,25 @@ export default function App() {
                   </button>
                 )}
               </div>
+
+              {/* Liten grå knapp for å hoppe over hele veiledningen */}
+              <button
+                onClick={() => {
+                  setShowTutorial(false);
+                  localStorage.setItem('klassekart_seen_tutorial', 'true');
+                }}
+                style={{
+                  marginTop: '12px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#64748b',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                Hopp over veiledning
+              </button>
 
             </div>
           </div>
