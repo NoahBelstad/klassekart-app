@@ -41,7 +41,6 @@ export default function App() {
   const [newClassName, setNewClassName] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
 
-  // Veiledning-modal state
   const [showTutorial, setShowTutorial] = useState<boolean>(() => {
     const seen = localStorage.getItem('klassekart_seen_tutorial');
     return seen !== 'true';
@@ -56,7 +55,7 @@ export default function App() {
 
   const [snapToGridEnabled, setSnapToGridEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('klassekart_snap_grid');
-    return saved !== null ? JSON.parse(saved) : false;
+    return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
@@ -460,7 +459,6 @@ export default function App() {
 
       <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
 
-        {/* SIDEBAR */}
         <div style={{ width: '300px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -479,7 +477,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Klasser */}
           <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Velg Klasse</div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -514,7 +511,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Elevliste */}
           {currentClass && (
             <div style={{ padding: '14px 16px', flex: 1, overflowY: 'auto' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Elevliste ({currentClass.students.length})</div>
@@ -544,7 +540,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Slett all appdata */}
           <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
             <button
               onClick={handleWipeAllAppData}
@@ -555,10 +550,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* MAIN CONTENT */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
 
-          {/* TOP BAR */}
           <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
               {currentClass ? `Klasserom: ${currentClass.name}` : 'Velg en klasse'}
@@ -591,7 +584,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* EDIT TOOLBAR */}
           {mode === 'edit' && currentChart && (
             <div style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>Legg til pulter:</span>
@@ -626,7 +618,6 @@ export default function App() {
             </div>
           )}
 
-          {/* CANVAS */}
           <div style={{ flex: 1, position: 'relative', overflow: 'auto', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {currentChart ? (
               <div
@@ -735,7 +726,6 @@ export default function App() {
               </div>
             )}
 
-            {/* POPOVER FOR ELEVVALG */}
             {mode === 'view' && activeBlockId && currentClass && (
               <div style={{ position: 'absolute', right: '24px', top: '24px', width: '280px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -756,6 +746,8 @@ export default function App() {
                   </button>
 
                   {currentClass.students.map((std) => {
+                    const activeBlock = currentClass.seating_chart.blocks.find(b => b.id === activeBlockId);
+                    const isSeatedOnThisBlock = activeBlock?.student_id === std.id;
                     const isSeatedElsewhere = currentClass.seating_chart.blocks.some(
                       (b) => b.student_id === std.id && b.id !== activeBlockId
                     );
@@ -770,7 +762,8 @@ export default function App() {
                         }}
                       >
                         <span>{std.name}</span>
-                        {isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700 }}>(Sitter alt)</span>}
+                        {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700 }}>Elev sitter på denne pulten</span>}
+                        {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700 }}>(Sitter alt)</span>}
                       </button>
                     );
                   })}
@@ -780,12 +773,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* INTERAKTIV VEILEDNINGS-MODAL */}
         {showTutorial && (
           <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: isSideStep ? 'flex-start' : 'center', paddingLeft: isSideStep ? '40px' : '0px', zIndex: 200, transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', width: '500px', maxWidth: '90vw', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', position: 'relative', pointerEvents: 'auto', border: '1px solid #cbd5e1', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
-              {/* Lukk-kryss */}
               <button
                 onClick={() => {
                   setShowTutorial(false);
@@ -808,14 +799,12 @@ export default function App() {
                 {tutorialSteps[tutorialStep].desc}
               </div>
 
-              {/* Statusmelding hvis låst */}
               {isInteractiveTutorial && !isCurrentStepCompleted() && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px', backgroundColor: '#fef3c7', padding: '8px 12px', borderRadius: '8px', width: '100%', justifyContent: 'center' }}>
                   <Lock size={15} /> Utfør handlingen i appen for å låse opp neste knappen!
                 </div>
               )}
 
-              {/* Fremgangspunkter */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
                 {tutorialSteps.map((_, idx) => (
                   <div
@@ -831,7 +820,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Navigasjonsknapper og Hopp over-knapp */}
               <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
                 <button
                   onClick={() => setTutorialStep(prev => Math.max(0, prev - 1))}
@@ -885,7 +873,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Liten grå knapp for å hoppe over hele veiledningen */}
               <button
                 onClick={() => {
                   setShowTutorial(false);
@@ -908,7 +895,6 @@ export default function App() {
           </div>
         )}
 
-        {/* EXPORT / PRINT MODAL */}
         {showExportModal && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '1150px', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
