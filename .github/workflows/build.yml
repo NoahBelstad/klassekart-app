@@ -23,7 +23,6 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # Caching for Rust (Cargo) - sparer masse tid på Windows og Ubuntu!
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
@@ -49,3 +48,5 @@ jobs:
           releaseBody: 'Seating chart app release'
           releaseDraft: false
           prerelease: false
+          # Dette sikrer at actionen ikke feiler om filstiene varierer litt mellom OS
+          args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles deb,appimage' || '--bundles nsis,msi' }}
