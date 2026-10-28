@@ -39,18 +39,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # Build the Rust binary first so we can zip it
-      - name: Compile Rust Binary
-        run: npm run tauri build
-
-      # Zip the standalone portable .exe (Windows only)
-      - name: Zip Standalone Binary (Windows)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          Compress-Archive -Path "src-tauri/target/release/klassekart-app.exe" -DestinationPath "src-tauri/target/release/bundle/nsis/klassekart-app-portable.zip"
-
-      # tauri-action handles creating the release and uploading ALL assets
-      - name: Publish Release Assets
+      - name: Build Tauri App & Publish Release
         uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,4 +49,6 @@ jobs:
           releaseBody: 'Seating chart app release'
           releaseDraft: false
           prerelease: false
+          # Uploads the standalone .exe file directly alongside installers
+          uploadPlainBinary: true
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles deb,appimage' || '--bundles nsis,msi' }}
