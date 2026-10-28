@@ -39,7 +39,8 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Tauri App & Publish Release
+      # Step 1: Standard Tauri release (creates normal installers on GitHub Releases)
+      - name: Publish Installers to GitHub Release
         uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,6 +50,12 @@ jobs:
           releaseBody: 'Seating chart app release'
           releaseDraft: false
           prerelease: false
-          # Uploads the standalone .exe file directly alongside installers
-          uploadPlainBinary: true
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles deb,appimage' || '--bundles nsis,msi' }}
+
+      # Step 2: Upload raw portable binary as a workflow Artifact (Windows only)
+      - name: Upload Portable Executable as Artifact
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: klassekart-app-portable-windows
+          path: src-tauri/target/release/klassekart-app.exe
