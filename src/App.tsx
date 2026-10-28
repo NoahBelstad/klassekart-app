@@ -32,6 +32,8 @@ export interface ClassRoom {
 }
 
 const BLOCK_SIZE = 55;
+const CANVAS_WIDTH = 1050;
+const CANVAS_HEIGHT = 680;
 
 export default function App() {
   const [classes, setClasses] = useState<ClassRoom[]>([]);
@@ -114,6 +116,18 @@ export default function App() {
     setNewClassName('');
   };
 
+  const handleDeleteClass = (classId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const clsToDelete = classes.find(c => c.id === classId);
+    if (!window.confirm(`Er du sikker på at du vil slette klassen "${clsToDelete?.name || ''}" og alt tilhørende innhold?`)) return;
+
+    const updated = classes.filter(c => c.id !== classId);
+    saveClassesToBackend(updated);
+    if (selectedClassId === classId) {
+      setSelectedClassId(updated.length > 0 ? updated[0].id : null);
+    }
+  };
+
   const handleAddStudent = () => {
     if (!selectedClassId || !newStudentName.trim()) return;
     const updated = classes.map((c) => {
@@ -161,28 +175,80 @@ export default function App() {
     saveClassesToBackend(updated);
   };
 
-  const handleAddBlocks = (count: number) => {
+  const handleAddGroupShape = (type: 1 | 2 | 3 | 4) => {
     if (!currentChart) return;
-    const startX = 80 + (currentChart.blocks.length % 5) * 80;
-    const startY = 80 + Math.floor(currentChart.blocks.length / 5) * 80;
 
-    const newBlocks: TableBlock[] = [];
-    for (let i = 0; i < count; i++) {
-      let bx = startX + (i * BLOCK_SIZE);
-      let by = startY;
+    // Definer formen på gruppen basert på type
+    // 1: 1 pult
+    // 2: 2 pulter på rekke
+    // 3: 3 pulter på rekke
+    // 4: 4 pulter i en firkant (2x2)
+    let offsets: { dx: number; dy: number }[] = [];
+    if (type === 1) offsets = [{ dx: 0, dy: 0 }];
+    else if (type === 2) offsets = [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }];
+    else if (type === 3) offsets = [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 2, dy: 0 }];
+    else if (type === 4) offsets = [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 1, dy: 1 }];
 
-      if (snapToGridEnabled) {
-        bx = Math.round(bx / BLOCK_SIZE) * BLOCK_SIZE;
-        by = Math.round(by / BLOCK_SIZE) * BLOCK_SIZE;
+    const existingBlocks = currentChart.blocks;
+    let foundOriginX = 40;
+    let foundOriginY = 40;
+    let placed = false;
+
+    // Prøv først å finne en plass der gruppen ikke rører noen andre pulter i det hele tatt
+    for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
+      if (placed) break;
+      for (let x = 40; x <= CANVAS_WIDTH - 200; x += BLOCK_SIZE) {
+        const canFitClean = offsets.every(off => {
+          const testX = x + off.dx * BLOCK_SIZE;
+          const testY = y + off.dy * BLOCK_SIZE;
+          // Sjekk at den er innenfor
+          if (testX + BLOCK_SIZE > CANVAS_WIDTH - 20 || testY + BLOCK_SIZE > CANVAS_HEIGHT - 20) return false;
+          // Sjekk at det er ledig og ikke klistrer seg til andre
+          const overlaps = existingBlocks.some(b => Math.abs(b.x - testX) < 5 && Math.abs(b.y - testY) < 5);
+          const touchesOthers = existingBlocks.some(b =>
+            (Math.abs(b.x - testX) === BLOCK_SIZE && b.y === testY) ||
+            (Math.abs(b.y - testY) === BLOCK_SIZE && b.x === testX)
+          );
+          return !overlaps && !touchesOthers;
+        });
+
+        if (canFitClean) {
+          foundOriginX = x;
+          foundOriginY = y;
+          placed = true;
+          break;
+        }
       }
-
-      newBlocks.push({
-        id: 'blk-' + Date.now() + '-' + i,
-        x: bx,
-        y: by,
-        student_id: null,
-      });
     }
+
+    // Hvis alt er fullt og vi ikke fant en helt isolert plass, finn bare en ledig plass uten kollisjon
+    if (!placed) {
+      for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
+        if (placed) break;
+        for (let x = 40; x <= CANVAS_WIDTH - 200; x += BLOCK_SIZE) {
+          const canFitAny = offsets.every(off => {
+            const testX = x + off.dx * BLOCK_SIZE;
+            const testY = y + off.dy * BLOCK_SIZE;
+            if (testX + BLOCK_SIZE > CANVAS_WIDTH - 20 || testY + BLOCK_SIZE > CANVAS_HEIGHT - 20) return false;
+            return !existingBlocks.some(b => Math.abs(b.x - testX) < 5 && Math.abs(b.y - testY) < 5);
+          });
+
+          if (canFitAny) {
+            foundOriginX = x;
+            foundOriginY = y;
+            placed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    const newBlocks: TableBlock[] = offsets.map((off, idx) => ({
+      id: 'blk-' + Date.now() + '-' + idx,
+      x: foundOriginX + (off.dx * BLOCK_SIZE),
+      y: foundOriginY + (off.dy * BLOCK_SIZE),
+      student_id: null,
+    }));
 
     updateCurrentChart((chart) => ({
       ...chart,
@@ -314,6 +380,8 @@ export default function App() {
             newX = Math.round(newX / BLOCK_SIZE) * BLOCK_SIZE;
             newY = Math.round(newY / BLOCK_SIZE) * BLOCK_SIZE;
           }
+          newX = Math.min(Math.max(0, newX), CANVAS_WIDTH - BLOCK_SIZE);
+          newY = Math.min(Math.max(0, newY), CANVAS_HEIGHT - BLOCK_SIZE);
           return { ...b, x: newX, y: newY };
         }
         return b;
@@ -339,7 +407,20 @@ export default function App() {
     setActiveBlockId(null);
   };
 
-  const getTableBlockStyle = (block: TableBlock, blocks: TableBlock[] = [], isAssigned: boolean, isPrint = false) => {
+  const getTableBlockStyle = (block: TableBlock, blocks: TableBlock[] = [], isAssigned: boolean, isPrint = false, isBeingDragged = false) => {
+    if (isBeingDragged) {
+      const defaultColor = isPrint ? '#1d4ed8' : '#047857';
+      const assignedColor = isPrint ? '#1d4ed8' : '#1d4ed8';
+      const borderColor = isAssigned ? assignedColor : defaultColor;
+      return {
+        borderRadius: '10px',
+        borderTop: `2px solid ${borderColor}`,
+        borderBottom: `2px solid ${borderColor}`,
+        borderLeft: `2px solid ${borderColor}`,
+        borderRight: `2px solid ${borderColor}`,
+      };
+    }
+
     const list = blocks || [];
     const tolerance = 5;
     const size = BLOCK_SIZE;
@@ -365,6 +446,15 @@ export default function App() {
       borderLeft: hasLeft ? `2px dashed ${borderColor}` : `2px solid ${borderColor}`,
       borderRight: hasRight ? `2px dashed ${borderColor}` : `2px solid ${borderColor}`,
     };
+  };
+
+  const getDynamicFontSize = (name: string) => {
+    if (!name) return '0.8rem';
+    if (name.length > 14) return '0.42rem';
+    if (name.length > 11) return '0.5rem';
+    if (name.length > 8) return '0.58rem';
+    if (name.length > 5) return '0.68rem';
+    return '0.8rem';
   };
 
   const handlePrint = () => {
@@ -494,19 +584,28 @@ export default function App() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '140px', overflowY: 'auto' }}>
               {classes.map((cls) => (
-                <button
+                <div
                   key={cls.id}
                   onClick={() => setSelectedClassId(cls.id)}
                   style={{
-                    width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    width: '100%', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     backgroundColor: cls.id === selectedClassId ? '#eff6ff' : 'transparent',
                     color: cls.id === selectedClassId ? '#1d4ed8' : '#334155',
                     border: cls.id === selectedClassId ? '1px solid #bfdbfe' : '1px solid transparent'
                   }}
                 >
-                  <span>{cls.name}</span>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', color: '#475569' }}>{cls.students.length} elever</span>
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cls.name}</span>
+                    <span style={{ fontSize: '0.7rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '10px', color: '#475569', flexShrink: 0 }}>{cls.students.length}</span>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteClass(cls.id, e)}
+                    style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                    title="Slett klasse"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -530,8 +629,8 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {currentClass.students.map((std) => (
                   <div key={std.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 10px', borderRadius: '6px', color: '#1e293b', fontWeight: 500 }}>
-                    <span>{std.name}</span>
-                    <button onClick={() => handleRemoveStudent(std.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '4px' }}>{std.name}</span>
+                    <button onClick={() => handleRemoveStudent(std.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -588,14 +687,17 @@ export default function App() {
             <div style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>Legg til pulter:</span>
 
-              <button onClick={() => handleAddBlocks(1)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(1)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                 + 1 Pult
               </button>
-              <button onClick={() => handleAddBlocks(2)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(2)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                 + 2-pult
               </button>
-              <button onClick={() => handleAddBlocks(3)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(3)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                 + 3-pult
+              </button>
+              <button onClick={() => handleAddGroupShape(4)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                + 4-pult (Firkant)
               </button>
 
               <div style={{ height: '24px', width: '2px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
@@ -635,8 +737,8 @@ export default function App() {
                     blocks: chart.blocks.map((b) => {
                       const match = dragCluster.clusterOffsets.find(o => o.id === b.id);
                       if (match) {
-                        let newX = Math.max(12, match.offsetX + deltaX);
-                        let newY = Math.max(12, match.offsetY + deltaY);
+                        let newX = Math.min(Math.max(0, match.offsetX + deltaX), CANVAS_WIDTH - BLOCK_SIZE);
+                        let newY = Math.min(Math.max(0, match.offsetY + deltaY), CANVAS_HEIGHT - BLOCK_SIZE);
                         return { ...b, x: newX, y: newY };
                       }
                       return b;
@@ -649,13 +751,14 @@ export default function App() {
                   }
                 }}
                 style={{
-                  position: 'relative', width: '1050px', height: '680px', backgroundColor: '#f0f9ff', borderRadius: '16px', border: '2px solid #bae6fd', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden',
-                  backgroundImage: 'radial-gradient(#38bdf8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px'
+                  position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: '#f0f9ff', borderRadius: '16px', border: '2px solid #bae6fd', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden',
+                  backgroundImage: 'radial-gradient(#38bdf8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', flexShrink: 0
                 }}
               >
                 {currentChart.blocks.map((blk) => {
                   const assignedStudent = currentClass?.students.find((s) => s.id === blk.student_id);
-                  const blockStyle = getTableBlockStyle(blk, currentChart.blocks, !!assignedStudent, false);
+                  const isBeingDragged = isDragging && dragCluster?.clusterOffsets.some(o => o.id === blk.id);
+                  const blockStyle = getTableBlockStyle(blk, currentChart.blocks, !!assignedStudent, false, isBeingDragged);
 
                   return (
                     <div
@@ -693,7 +796,7 @@ export default function App() {
                       style={{
                         position: 'absolute', left: blk.x, top: blk.y, width: BLOCK_SIZE, height: BLOCK_SIZE,
                         ...blockStyle,
-                        padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                        padding: '4px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                         cursor: mode === 'edit' ? 'grab' : 'pointer',
                         backgroundColor: assignedStudent ? '#2563eb' : '#10b981',
                         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.08)',
@@ -702,18 +805,18 @@ export default function App() {
                       title={mode === 'edit' ? 'Høyreklikk for å slette, dobbeltklikk for å ufeste' : ''}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '7px', fontWeight: 800, color: assignedStudent ? '#93c5fd' : '#a7f3d0', textTransform: 'uppercase' }}>Pult</span>
+                        <span style={{ fontSize: '6px', fontWeight: 800, color: assignedStudent ? '#93c5fd' : '#a7f3d0', textTransform: 'uppercase' }}>Pult</span>
                         {mode === 'edit' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteBlock(blk.id); }}
                             style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: 0 }}
                             title="Slett pult"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={12} />
                           </button>
                         )}
                       </div>
-                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '0.8rem', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
                         {assignedStudent ? assignedStudent.name : 'Ledig'}
                       </div>
                     </div>
@@ -761,9 +864,9 @@ export default function App() {
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600
                         }}
                       >
-                        <span>{std.name}</span>
-                        {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700 }}>Elev sitter på denne pulten</span>}
-                        {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700 }}>(Sitter alt)</span>}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{std.name}</span>
+                        {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>Sitter her</span>}
+                        {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>(Opptatt)</span>}
                       </button>
                     );
                   })}
@@ -911,7 +1014,7 @@ export default function App() {
                   ref={printAreaRef}
                   id="printable-area"
                   style={{
-                    position: 'relative', width: '1050px', height: '680px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '20px'
+                    position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '20px', flexShrink: 0
                   }}
                 >
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
@@ -928,13 +1031,13 @@ export default function App() {
                           style={{
                             position: 'absolute', left: blk.x, top: blk.y, width: BLOCK_SIZE, height: BLOCK_SIZE,
                             ...blockStyle,
-                            padding: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            padding: '4px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                             backgroundColor: '#2563eb',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                           }}
                         >
-                          <span style={{ fontSize: '7px', fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase' }}>Pult</span>
-                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '0.8rem', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '6px', fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase' }}>Pult</span>
+                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
                             {assignedStudent ? assignedStudent.name : 'Ledig'}
                           </div>
                         </div>
