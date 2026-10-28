@@ -4,10 +4,11 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 jobs:
   build-tauri:
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -38,7 +39,18 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Tauri App
+      # Build the Rust binary first so we can zip it
+      - name: Compile Rust Binary
+        run: npm run tauri build
+
+      # Zip the standalone portable .exe (Windows only)
+      - name: Zip Standalone Binary (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          Compress-Archive -Path "src-tauri/target/release/klassekart-app.exe" -DestinationPath "src-tauri/target/release/bundle/nsis/klassekart-app-portable.zip"
+
+      # tauri-action handles creating the release and uploading ALL assets
+      - name: Publish Release Assets
         uses: tauri-apps/tauri-action@v0.5.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,19 +61,3 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles deb,appimage' || '--bundles nsis,msi' }}
-
-      # Zip the standalone portable .exe (Windows only)
-      - name: Zip Standalone Binary (Windows)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          Compress-Archive -Path "src-tauri/target/release/klassekart-app.exe" -DestinationPath "src-tauri/target/release/klassekart-app-portable.zip"
-
-      # Upload the portable zip to the release
-      - name: Upload Portable Zip to Release
-        if: matrix.platform == 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: app-v0.1.0
-          files: src-tauri/target/release/klassekart-app-portable.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
