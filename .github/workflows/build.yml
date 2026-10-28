@@ -4,6 +4,10 @@ on:
   push:
     branches: ["main"]
 
+# Grant write permissions for contents and releases
+permissions:
+  contents: write
+
 jobs:
   build-tauri:
     permissions:
