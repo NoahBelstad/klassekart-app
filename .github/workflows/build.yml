@@ -48,5 +48,20 @@ jobs:
           releaseBody: 'Seating chart app release'
           releaseDraft: false
           prerelease: false
-          # Dette sikrer at actionen ikke feiler om filstiene varierer litt mellom OS
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles deb,appimage' || '--bundles nsis,msi' }}
+
+      # Zip the standalone portable .exe (Windows only)
+      - name: Zip Standalone Binary (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          Compress-Archive -Path "src-tauri/target/release/klassekart-app.exe" -DestinationPath "src-tauri/target/release/klassekart-app-portable.zip"
+
+      # Upload the portable zip to the release
+      - name: Upload Portable Zip to Release
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v0.1.0
+          files: src-tauri/target/release/klassekart-app-portable.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
