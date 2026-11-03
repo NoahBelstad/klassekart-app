@@ -16,6 +16,7 @@ export interface TableBlock {
   x: number;
   y: number;
   student_id: string | null;
+  is_front?: boolean;
 }
 
 export interface SeatingChart {
@@ -41,6 +42,31 @@ export interface Class {
 const BLOCK_SIZE = 55;
 const CANVAS_WIDTH = 1050;
 const CANVAS_HEIGHT = 680;
+
+const getFrontBlock = (): TableBlock => {
+  const FRONT_WIDTH_BLOCKS = 5;
+  const totalWidth = FRONT_WIDTH_BLOCKS * BLOCK_SIZE;
+  const x = Math.round((CANVAS_WIDTH - totalWidth) / 2 / BLOCK_SIZE) * BLOCK_SIZE;
+  const y = 10; // Plassert helt øverst
+  return {
+    id: 'front-tavle',
+    x,
+    y,
+    student_id: null,
+    is_front: true
+  };
+};
+
+const ensureFrontBlock = (chart: SeatingChart): SeatingChart => {
+  const hasFront = chart.blocks.some(b => b.is_front);
+  if (!hasFront) {
+    return {
+      ...chart,
+      blocks: [getFrontBlock(), ...chart.blocks]
+    };
+  }
+  return chart;
+};
 
 export default function App() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -89,9 +115,16 @@ export default function App() {
   const loadClasses = async () => {
     try {
       const res: Class[] = await invoke('get_classes');
-      setClasses(res || []);
-      if (res && res.length > 0 && !selectedClassId) {
-        const firstClass = res[0];
+      const normalized = (res || []).map(cls => ({
+        ...cls,
+        classrooms: (cls.classrooms || []).map(room => ({
+          ...room,
+          seating_chart: ensureFrontBlock(room.seating_chart)
+        }))
+      }));
+      setClasses(normalized);
+      if (normalized && normalized.length > 0 && !selectedClassId) {
+        const firstClass = normalized[0];
         setSelectedClassId(firstClass.id);
         if (firstClass.classrooms && firstClass.classrooms.length > 0) {
           setSelectedClassroomId(firstClass.classrooms[0].id);
@@ -113,7 +146,7 @@ export default function App() {
 
   const currentClass = classes.find((c) => c.id === selectedClassId) || null;
   const currentClassroom = currentClass?.classrooms.find((r) => r.id === selectedClassroomId) || null;
-  const currentChart = currentClassroom?.seating_chart || null;
+  const currentChart = currentClassroom ? ensureFrontBlock(currentClassroom.seating_chart) : null;
 
   const handleAddClass = () => {
     if (!newClassName.trim()) return;
@@ -125,7 +158,7 @@ export default function App() {
       classrooms: [{
         id: newChartId,
         name: 'Klasserom',
-        seating_chart: { id: newChartId, name: 'Klasserom', blocks: [] }
+        seating_chart: { id: newChartId, name: 'Klasserom', blocks: [getFrontBlock()] }
       }],
     };
     const updated = [...classes, newClass];
@@ -196,7 +229,7 @@ export default function App() {
           ...c,
           classrooms: c.classrooms.map((r) => {
             if (r.id === selectedClassroomId) {
-              return { ...r, seating_chart: updater(r.seating_chart) };
+              return { ...r, seating_chart: ensureFrontBlock(updater(r.seating_chart)) };
             }
             return r;
           }),
@@ -215,7 +248,7 @@ export default function App() {
     const newClassroom: Classroom = {
       id: newChartId,
       name: name.trim(),
-      seating_chart: { id: newChartId, name: name.trim(), blocks: [] },
+      seating_chart: { id: newChartId, name: name.trim(), blocks: [getFrontBlock()] },
     };
     const updated = classes.map((c) => {
       if (c.id === selectedClassId) {
@@ -261,10 +294,10 @@ export default function App() {
 
     const existingBlocks = currentChart.blocks;
     let foundOriginX = 40;
-    let foundOriginY = 40;
+    let foundOriginY = 120;
     let placed = false;
 
-    for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
+    for (let y = 120; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
       if (placed) break;
       for (let x = 40; x <= CANVAS_WIDTH - 200; x += BLOCK_SIZE) {
         const canFitClean = offsets.every(off => {
@@ -289,7 +322,7 @@ export default function App() {
     }
 
     if (!placed) {
-      for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
+      for (let y = 120; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
         if (placed) break;
         for (let x = 40; x <= CANVAS_WIDTH - 200; x += BLOCK_SIZE) {
           const canFitAny = offsets.every(off => {
@@ -323,6 +356,8 @@ export default function App() {
   };
 
   const handleDeleteBlock = (blockId: string) => {
+    const block = currentChart?.blocks.find(b => b.id === blockId);
+    if (block?.is_front) return;
     updateCurrentChart((chart) => ({
       ...chart,
       blocks: chart.blocks.filter(b => b.id !== blockId),
@@ -334,7 +369,7 @@ export default function App() {
     if (!window.confirm('Er du sikker på at du vil slette alle pulter i dette klasserommet?')) return;
     updateCurrentChart((chart) => ({
       ...chart,
-      blocks: [],
+      blocks: chart.blocks.filter(b => b.is_front),
     }));
     setActiveBlockId(null);
   };
@@ -352,6 +387,8 @@ export default function App() {
   };
 
   const handleDetachBlock = (blockId: string) => {
+    const block = currentChart?.blocks.find(b => b.id === blockId);
+    if (block?.is_front) return;
     updateCurrentChart((chart) => ({
       ...chart,
       blocks: chart.blocks.map(b => {
@@ -364,6 +401,9 @@ export default function App() {
   };
 
   const getClusterBlockIds = (startId: string, blocks: TableBlock[]): string[] => {
+    const startBlock = blocks.find(b => b.id === startId);
+    if (startBlock?.is_front) return [startId]; // Fronten kan dras alene
+
     const visited = new Set<string>();
     const queue = [startId];
     visited.add(startId);
@@ -374,7 +414,7 @@ export default function App() {
       if (!curr) continue;
 
       for (const other of blocks) {
-        if (visited.has(other.id)) continue;
+        if (other.is_front || visited.has(other.id)) continue;
         const isAdjacent =
           (Math.abs(curr.x - other.x) === BLOCK_SIZE && curr.y === other.y) ||
           (Math.abs(curr.y - other.y) === BLOCK_SIZE && curr.x === other.x);
@@ -398,35 +438,39 @@ export default function App() {
     let snapOffsetY = 0;
     let foundSnap = false;
 
+    const isDraggingFront = clusterIds.length === 1 && currentChart.blocks.find(b => b.id === clusterIds[0])?.is_front;
+
     const clusterBlocks = currentChart.blocks.filter(b => clusterIds.includes(b.id));
     const otherBlocks = currentChart.blocks.filter(b => !clusterIds.includes(b.id));
 
-    for (const cb of clusterBlocks) {
-      if (foundSnap) break;
-      for (const ob of otherBlocks) {
-        if (Math.abs(cb.x - (ob.x + BLOCK_SIZE)) < SNAP_THRESHOLD && Math.abs(cb.y - ob.y) < SNAP_THRESHOLD) {
-          snapOffsetX = (ob.x + BLOCK_SIZE) - cb.x;
-          snapOffsetY = ob.y - cb.y;
-          foundSnap = true;
-          break;
-        }
-        else if (Math.abs((cb.x + BLOCK_SIZE) - ob.x) < SNAP_THRESHOLD && Math.abs(cb.y - ob.y) < SNAP_THRESHOLD) {
-          snapOffsetX = (ob.x - BLOCK_SIZE) - cb.x;
-          snapOffsetY = ob.y - cb.y;
-          foundSnap = true;
-          break;
-        }
-        else if (Math.abs(cb.y - (ob.y + BLOCK_SIZE)) < SNAP_THRESHOLD && Math.abs(cb.x - ob.x) < SNAP_THRESHOLD) {
-          snapOffsetX = ob.x - cb.x;
-          snapOffsetY = (ob.y + BLOCK_SIZE) - cb.y;
-          foundSnap = true;
-          break;
-        }
-        else if (Math.abs((cb.y + BLOCK_SIZE) - ob.y) < SNAP_THRESHOLD && Math.abs(cb.x - ob.x) < SNAP_THRESHOLD) {
-          snapOffsetX = ob.x - cb.x;
-          snapOffsetY = (ob.y - BLOCK_SIZE) - cb.y;
-          foundSnap = true;
-          break;
+    if (!isDraggingFront) {
+      for (const cb of clusterBlocks) {
+        if (foundSnap) break;
+        for (const ob of otherBlocks) {
+          if (Math.abs(cb.x - (ob.x + BLOCK_SIZE)) < SNAP_THRESHOLD && Math.abs(cb.y - ob.y) < SNAP_THRESHOLD) {
+            snapOffsetX = (ob.x + BLOCK_SIZE) - cb.x;
+            snapOffsetY = ob.y - cb.y;
+            foundSnap = true;
+            break;
+          }
+          else if (Math.abs((cb.x + BLOCK_SIZE) - ob.x) < SNAP_THRESHOLD && Math.abs(cb.y - ob.y) < SNAP_THRESHOLD) {
+            snapOffsetX = (ob.x - BLOCK_SIZE) - cb.x;
+            snapOffsetY = ob.y - cb.y;
+            foundSnap = true;
+            break;
+          }
+          else if (Math.abs(cb.y - (ob.y + BLOCK_SIZE)) < SNAP_THRESHOLD && Math.abs(cb.x - ob.x) < SNAP_THRESHOLD) {
+            snapOffsetX = ob.x - cb.x;
+            snapOffsetY = (ob.y + BLOCK_SIZE) - cb.y;
+            foundSnap = true;
+            break;
+          }
+          else if (Math.abs((cb.y + BLOCK_SIZE) - ob.y) < SNAP_THRESHOLD && Math.abs(cb.x - ob.x) < SNAP_THRESHOLD) {
+            snapOffsetX = ob.x - cb.x;
+            snapOffsetY = (ob.y - BLOCK_SIZE) - cb.y;
+            foundSnap = true;
+            break;
+          }
         }
       }
     }
@@ -446,7 +490,8 @@ export default function App() {
             newX = Math.round(newX / BLOCK_SIZE) * BLOCK_SIZE;
             newY = Math.round(newY / BLOCK_SIZE) * BLOCK_SIZE;
           }
-          newX = Math.min(Math.max(0, newX), CANVAS_WIDTH - BLOCK_SIZE);
+          const maxWidth = b.is_front ? CANVAS_WIDTH - (BLOCK_SIZE * 5) : CANVAS_WIDTH - BLOCK_SIZE;
+          newX = Math.min(Math.max(0, newX), maxWidth);
           newY = Math.min(Math.max(0, newY), CANVAS_HEIGHT - BLOCK_SIZE);
           return { ...b, x: newX, y: newY };
         }
@@ -457,6 +502,8 @@ export default function App() {
 
   const handleAssignStudent = (studentId: string | null) => {
     if (!activeBlockId || !currentChart) return;
+    const block = currentChart.blocks.find(b => b.id === activeBlockId);
+    if (block?.is_front) return;
 
     updateCurrentChart((chart) => ({
       ...chart,
@@ -474,16 +521,19 @@ export default function App() {
   };
 
   const getTableBlockStyle = (block: TableBlock, blocks: TableBlock[] = [], isAssigned: boolean, isPrint = false, isBeingDragged = false) => {
+    if (block.is_front) {
+      return {
+        borderRadius: '8px',
+        border: '2px solid #4338ca',
+      };
+    }
     if (isBeingDragged) {
       const defaultColor = isPrint ? '#1d4ed8' : '#047857';
       const assignedColor = isPrint ? '#1d4ed8' : '#1d4ed8';
       const borderColor = isAssigned ? assignedColor : defaultColor;
       return {
         borderRadius: '10px',
-        borderTop: `2px solid ${borderColor}`,
-        borderBottom: `2px solid ${borderColor}`,
-        borderLeft: `2px solid ${borderColor}`,
-        borderRight: `2px solid ${borderColor}`,
+        border: `2px solid ${borderColor}`,
       };
     }
 
@@ -491,10 +541,10 @@ export default function App() {
     const tolerance = 5;
     const size = BLOCK_SIZE;
 
-    const hasTop = list.some(b => Math.abs(b.x - block.x) < tolerance && Math.abs(b.y - (block.y - size)) < tolerance);
-    const hasBottom = list.some(b => Math.abs(b.x - block.x) < tolerance && Math.abs(b.y - (block.y + size)) < tolerance);
-    const hasLeft = list.some(b => Math.abs(b.y - block.y) < tolerance && Math.abs(b.x - (block.x - size)) < tolerance);
-    const hasRight = list.some(b => Math.abs(b.y - block.y) < tolerance && Math.abs(b.x - (block.x + size)) < tolerance);
+    const hasTop = list.some(b => !b.is_front && Math.abs(b.x - block.x) < tolerance && Math.abs(b.y - (block.y - size)) < tolerance);
+    const hasBottom = list.some(b => !b.is_front && Math.abs(b.x - block.x) < tolerance && Math.abs(b.y - (block.y + size)) < tolerance);
+    const hasLeft = list.some(b => !b.is_front && Math.abs(b.y - block.y) < tolerance && Math.abs(b.x - (block.x - size)) < tolerance);
+    const hasRight = list.some(b => !b.is_front && Math.abs(b.y - block.y) < tolerance && Math.abs(b.x - (block.x + size)) < tolerance);
 
     const tl = hasTop || hasLeft ? '0px' : '10px';
     const tr = hasTop || hasRight ? '0px' : '10px';
@@ -531,7 +581,7 @@ export default function App() {
     if (!printAreaRef.current) return;
     try {
       let textSummary = `KLASSEKART: ${currentClass?.name || 'Klasse'}\n\n`;
-      currentChart?.blocks.forEach((b, idx) => {
+      currentChart?.blocks.filter(b => !b.is_front).forEach((b, idx) => {
         const student = currentClass?.students.find(s => s.id === b.student_id);
         textSummary += `Pult ${idx + 1}: ${student ? student.name : 'Ledig'}\n`;
       });
@@ -580,7 +630,7 @@ export default function App() {
     if (tutorialStep === 0) return true;
     if (tutorialStep === 1) return classes.length > 0;
     if (tutorialStep === 2) return currentClass ? currentClass.students.length > 0 : false;
-    if (tutorialStep === 3) return currentChart ? currentChart.blocks.length > 0 : false;
+    if (tutorialStep === 3) return currentChart ? currentChart.blocks.some(b => !b.is_front) : false;
     if (tutorialStep === 4) return currentChart ? currentChart.blocks.some(b => b.student_id !== null) : false;
     if (tutorialStep === 5) return true;
     return true;
@@ -870,7 +920,8 @@ export default function App() {
                     blocks: chart.blocks.map((b) => {
                       const match = dragCluster.clusterOffsets.find(o => o.id === b.id);
                       if (match) {
-                        let newX = Math.min(Math.max(0, match.offsetX + deltaX), CANVAS_WIDTH - BLOCK_SIZE);
+                        const maxW = b.is_front ? CANVAS_WIDTH - (BLOCK_SIZE * 5) : CANVAS_WIDTH - BLOCK_SIZE;
+                        let newX = Math.min(Math.max(0, match.offsetX + deltaX), maxW);
                         let newY = Math.min(Math.max(0, match.offsetY + deltaY), CANVAS_HEIGHT - BLOCK_SIZE);
                         return { ...b, x: newX, y: newY };
                       }
@@ -889,7 +940,8 @@ export default function App() {
                 }}
               >
                 {currentChart.blocks.map((blk) => {
-                  const assignedStudent = currentClass?.students.find((s) => s.id === blk.student_id);
+                  const isFront = blk.is_front;
+                  const assignedStudent = !isFront ? currentClass?.students.find((s) => s.id === blk.student_id) : null;
                   const isBeingDragged = isDragging && dragCluster?.clusterOffsets.some(o => o.id === blk.id);
                   const blockStyle = getTableBlockStyle(blk, currentChart.blocks, !!assignedStudent, false, isBeingDragged);
 
@@ -912,6 +964,7 @@ export default function App() {
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
+                        if (isFront) return;
                         if (mode === 'edit') {
                           handleDeleteBlock(blk.id);
                         } else if (mode === 'view') {
@@ -925,17 +978,25 @@ export default function App() {
                       }}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
+                        if (isFront) return;
                         if (mode === 'edit') {
                           handleDetachBlock(blk.id);
                         }
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (isFront) return;
                         if (mode === 'view') setActiveBlockId(blk.id);
                       }}
-                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverBlockId(blk.id); }}
+                      onDragOver={(e) => {
+                        if (isFront) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        setDragOverBlockId(blk.id);
+                      }}
                       onDragLeave={() => setDragOverBlockId(null)}
                       onDrop={(e) => {
+                        if (isFront) return;
                         e.preventDefault();
                         const studentId = e.dataTransfer.getData('text/plain');
                         if (studentId) {
@@ -951,30 +1012,30 @@ export default function App() {
                         }
                       }}
                       style={{
-                        position: 'absolute', left: blk.x, top: blk.y, width: BLOCK_SIZE, height: BLOCK_SIZE,
+                        position: 'absolute',
+                        left: blk.x,
+                        top: blk.y,
+                        width: isFront ? (BLOCK_SIZE * 5) : BLOCK_SIZE,
+                        height: BLOCK_SIZE,
                         ...blockStyle,
-                        padding: '4px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                        cursor: mode === 'edit' ? 'grab' : 'pointer',
-                        backgroundColor: dragOverBlockId === blk.id ? '#047857' : (assignedStudent ? '#2563eb' : '#10b981'),
+                        padding: '4px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        cursor: mode === 'edit' ? 'grab' : (isFront ? 'default' : 'pointer'),
+                        backgroundColor: isFront ? '#4f46e5' : (dragOverBlockId === blk.id ? '#047857' : (assignedStudent ? '#2563eb' : '#10b981')),
                         boxShadow: dragOverBlockId === blk.id ? '0 0 0 3px rgba(4,120,87,0.6)' : '0 4px 6px -1px rgba(0,0,0,0.08)',
                         transition: isDragging ? 'none' : 'background-color 0.15s'
                       }}
-                      title={mode === 'edit' ? 'Høyreklikk for å slette, dobbeltklikk for å ufeste' : ''}
+                      title={isFront ? 'Klasserommets (Tavle) - kan flyttes i redigeringsmodus' : (mode === 'edit' ? 'Høyreklikk for å slette, dobbeltklikk for å ufeste' : '')}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '6px', fontWeight: 800, color: assignedStudent ? '#93c5fd' : '#a7f3d0', textTransform: 'uppercase' }}>Pult</span>
-                        {mode === 'edit' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteBlock(blk.id); }}
-                            style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: 0 }}
-                            title="Slett pult"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
+                        <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? '#c7d2fe' : (assignedStudent ? '#93c5fd' : '#a7f3d0'), textTransform: 'uppercase' }}>
+                          {isFront ? 'Felles' : 'Pult'}
+                        </span>
                       </div>
-                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
-                        {assignedStudent ? assignedStudent.name : 'Ledig'}
+                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
+                        {isFront ? 'TAVLE' : (assignedStudent ? assignedStudent.name : 'Ledig')}
                       </div>
                     </div>
                   );
@@ -1237,22 +1298,32 @@ export default function App() {
                   </div>
                   <div style={{ position: 'relative', width: '100%', height: '580px' }}>
                     {currentChart?.blocks.map((blk) => {
-                      const assignedStudent = currentClass?.students.find((s) => s.id === blk.student_id);
+                      const isFront = blk.is_front;
+                      const assignedStudent = !isFront ? currentClass?.students.find((s) => s.id === blk.student_id) : null;
                       const blockStyle = getTableBlockStyle(blk, currentChart.blocks, !!assignedStudent, true);
                       return (
                         <div
                           key={blk.id}
                           style={{
-                            position: 'absolute', left: blk.x, top: blk.y, width: BLOCK_SIZE, height: BLOCK_SIZE,
+                            position: 'absolute',
+                            left: blk.x,
+                            top: blk.y,
+                            width: isFront ? (BLOCK_SIZE * 5) : BLOCK_SIZE,
+                            height: BLOCK_SIZE,
                             ...blockStyle,
-                            padding: '4px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                            backgroundColor: '#2563eb',
+                            padding: '4px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            backgroundColor: isFront ? '#4338ca' : '#2563eb',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                           }}
                         >
-                          <span style={{ fontSize: '6px', fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase' }}>Pult</span>
-                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
-                            {assignedStudent ? assignedStudent.name : 'Ledig'}
+                          <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? '#c7d2fe' : '#93c5fd', textTransform: 'uppercase' }}>
+                            {isFront ? 'Felles' : 'Pult'}
+                          </span>
+                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
+                            {isFront ? 'FRONT / TAVLE' : (assignedStudent ? assignedStudent.name : 'Ledig')}
                           </div>
                         </div>
                       );
