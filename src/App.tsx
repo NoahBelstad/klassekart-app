@@ -253,11 +253,6 @@ export default function App() {
   const handleAddGroupShape = (type: 1 | 2 | 3 | 4) => {
     if (!currentChart) return;
 
-    // Definer formen på gruppen basert på type
-    // 1: 1 pult
-    // 2: 2 pulter på rekke
-    // 3: 3 pulter på rekke
-    // 4: 4 pulter i en firkant (2x2)
     let offsets: { dx: number; dy: number }[] = [];
     if (type === 1) offsets = [{ dx: 0, dy: 0 }];
     else if (type === 2) offsets = [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }];
@@ -269,16 +264,13 @@ export default function App() {
     let foundOriginY = 40;
     let placed = false;
 
-    // Prøv først å finne en plass der gruppen ikke rører noen andre pulter i det hele tatt
     for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
       if (placed) break;
       for (let x = 40; x <= CANVAS_WIDTH - 200; x += BLOCK_SIZE) {
         const canFitClean = offsets.every(off => {
           const testX = x + off.dx * BLOCK_SIZE;
           const testY = y + off.dy * BLOCK_SIZE;
-          // Sjekk at den er innenfor
           if (testX + BLOCK_SIZE > CANVAS_WIDTH - 20 || testY + BLOCK_SIZE > CANVAS_HEIGHT - 20) return false;
-          // Sjekk at det er ledig og ikke klistrer seg til andre
           const overlaps = existingBlocks.some(b => Math.abs(b.x - testX) < 5 && Math.abs(b.y - testY) < 5);
           const touchesOthers = existingBlocks.some(b =>
             (Math.abs(b.x - testX) === BLOCK_SIZE && b.y === testY) ||
@@ -296,7 +288,6 @@ export default function App() {
       }
     }
 
-    // Hvis alt er fullt og vi ikke fant en helt isolert plass, finn bare en ledig plass uten kollisjon
     if (!placed) {
       for (let y = 40; y <= CANVAS_HEIGHT - 150; y += BLOCK_SIZE) {
         if (placed) break;
@@ -559,27 +550,27 @@ export default function App() {
     },
     {
       title: "Steg 1: Lag klasse 📝",
-      desc: "Se helt til venstre på skjermen:\n\n1. Klikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      desc: "1. Se helt til venstre på skjermen:\nKlikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <UserPlus size={48} color="#059669" />
     },
     {
       title: "Steg 2: Legg til elev 👤",
-      desc: "Se i sidepanelet til venstre under elevlisten:\n\n1. Skriv inn navnet på en elev.\n2. Trykk på den grønne knappen for å legge eleven til i listen.\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      desc: "1. Se i sidepanelet til venstre under elevlisten:\nSkriv inn navnet på en elev.\n2. Trykk på den grønne knappen for å legge eleven til i listen.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <UserPlus size={48} color="#059669" />
     },
     {
       title: "Steg 3: Bygg pulter 🪑",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Bygg / Flytt pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      desc: "1. Se øverst på skjermen:\nKlikk på knappen 'Bygg / Flytt pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <Move size={48} color="#2563eb" />
     },
     {
       title: "Steg 4: Plassér elev 👤",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Plassér elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      desc: "1. Se øverst på skjermen:\nKlikk på knappen 'Plassér elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <MousePointer size={48} color="#d97706" />
     },
     {
       title: "Steg 5: Skriv ut / lagre 🖨️",
-      desc: "Når du er ferdig med å plassere elever:\n\n1. Klikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Der kan du skrive ut arket på en fysisk skriver.",
+      desc: "1. Når du er ferdig med å plassere elever:\nKlikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Der kan du skrive ut arket på en fysisk skriver.",
       icon: <Printer size={48} color="#7c3aed" />
     }
   ];
@@ -594,8 +585,6 @@ export default function App() {
     if (tutorialStep === 5) return true;
     return true;
   };
-
-  const isSideStep = tutorialStep === 3 || tutorialStep === 4;
 
   return (
     <>
@@ -624,7 +613,8 @@ export default function App() {
 
       <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
 
-        <div style={{ width: '300px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+        {/* Sidepanel */}
+        <div style={{ width: '280px', minWidth: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <LayoutGrid size={24} /> Klassekart
@@ -653,7 +643,7 @@ export default function App() {
                 onKeyDown={(e) => e.key === 'Enter' && handleAddClass()}
                 style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
               />
-              <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+              <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Ny klasse
               </button>
             </div>
@@ -749,9 +739,10 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
+        {/* Hovedinnhold */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
 
-          <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
                 {currentClass ? currentClass.name : 'Velg en klasse'}
@@ -766,7 +757,7 @@ export default function App() {
                     <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{showChartDropdown ? '▲' : '▼'}</span>
                   </button>
                   {showChartDropdown && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, backgroundColor: '#ffffff', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', padding: '6px', minWidth: '220px', zIndex: 60, border: 'none' }}>
+                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, backgroundColor: '#ffffff', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', padding: '6px', minWidth: '220px', zIndex: 60, border: '1px solid #e2e8f0' }}>
                       {currentClass.classrooms.map((room) => (
                         <button
                           key={room.id}
@@ -797,7 +788,7 @@ export default function App() {
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               {currentClass && (
                 <button
                   onClick={() => setShowExportModal(true)}
@@ -810,13 +801,13 @@ export default function App() {
               <div style={{ display: 'flex', background: '#e2e8f0', padding: '4px', borderRadius: '10px', gap: '4px' }}>
                 <button
                   onClick={() => { setMode('view'); setActiveBlockId(null); }}
-                  style={{ fontSize: '0.85rem', padding: '8px 16px', background: mode === 'view' ? '#ffffff' : 'transparent', color: mode === 'view' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'view' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'view' ? '#ffffff' : 'transparent', color: mode === 'view' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'view' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                 >
                   <MousePointer size={15} /> Plassér elever
                 </button>
                 <button
                   onClick={() => { setMode('edit'); setActiveBlockId(null); }}
-                  style={{ fontSize: '0.85rem', padding: '8px 16px', background: mode === 'edit' ? '#ffffff' : 'transparent', color: mode === 'edit' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'edit' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'edit' ? '#ffffff' : 'transparent', color: mode === 'edit' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'edit' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                 >
                   <Move size={15} /> Bygg / Flytt pulter
                 </button>
@@ -825,29 +816,29 @@ export default function App() {
           </div>
 
           {mode === 'edit' && currentChart && (
-            <div style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>Legg til pulter:</span>
 
-              <button onClick={() => handleAddGroupShape(1)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(1)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 1 Pult
               </button>
-              <button onClick={() => handleAddGroupShape(2)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(2)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 2-pult
               </button>
-              <button onClick={() => handleAddGroupShape(3)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(3)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 3-pult
               </button>
-              <button onClick={() => handleAddGroupShape(4)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => handleAddGroupShape(4)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 4-pult (Firkant)
               </button>
 
-              <div style={{ height: '24px', width: '2px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
+              <div style={{ height: '20px', width: '2px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
 
               <button
                 onClick={() => setSnapToGridEnabled(!snapToGridEnabled)}
                 style={{
                   backgroundColor: snapToGridEnabled ? '#059669' : '#475569',
-                  color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
                 }}
               >
                 <Grid size={16} /> Snapp til rutenett: {snapToGridEnabled ? 'PÅ' : 'AV'}
@@ -855,13 +846,14 @@ export default function App() {
 
               <div style={{ flex: 1 }} />
 
-              <button onClick={handleClearAllBlocks} style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button onClick={handleClearAllBlocks} style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Trash2 size={16} /> Slett alle pulter
               </button>
             </div>
           )}
 
-          <div style={{ flex: 1, position: 'relative', overflow: 'auto', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Canvas-område med responsiv rulling */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'auto', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {currentChart ? (
               <div
                 onMouseMove={(e) => {
@@ -994,12 +986,11 @@ export default function App() {
               </div>
             )}
 
+            {/* Elevvalg-meny ved klikk på pult */}
             {mode === 'view' && activeBlockId && currentClass && (
-              <div style={{ position: 'absolute', right: '24px', top: '24px', width: '280px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
+              <div style={{ position: 'absolute', right: '20px', top: '20px', width: '260px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563eb' }}>
-                    Velg elev til pult:
-                  </h3>
+                  <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563eb', margin: 0 }}>Velg elev til pult:</h3>
                   <button onClick={() => setActiveBlockId(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                     <X size={18} />
                   </button>
@@ -1018,79 +1009,130 @@ export default function App() {
                     placeholder="Søk elev..."
                     value={searchStudent}
                     onChange={(e) => setSearchStudent(e.target.value)}
-                    style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: '#0f172a', outline: 'none', marginBottom: '6px' }}
+                    style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: '#0f172a', outline: 'none', marginBottom: '6px', boxSizing: 'border-box' }}
                   />
 
                   {currentClass.students
                     .filter((std) => std.name.toLowerCase().includes(searchStudent.toLowerCase()))
                     .map((std) => {
-                    const activeBlock = currentChart ? currentChart.blocks.find(b => b.id === activeBlockId) : null;
-                    const isSeatedOnThisBlock = activeBlock?.student_id === std.id;
-                    const isSeatedElsewhere = currentChart ? currentChart.blocks.some(
-                      (b) => b.student_id === std.id && b.id !== activeBlockId
-                    ) : false;
+                      const activeBlock = currentChart ? currentChart.blocks.find(b => b.id === activeBlockId) : null;
+                      const isSeatedOnThisBlock = activeBlock?.student_id === std.id;
+                      const isSeatedElsewhere = currentChart ? currentChart.blocks.some(
+                        (b) => b.student_id === std.id && b.id !== activeBlockId
+                      ) : false;
 
-                    return (
-                      <button
-                        key={std.id}
-                        onClick={() => handleAssignStudent(std.id)}
-                        style={{
-                          textAlign: 'left', backgroundColor: '#f8fafc', color: '#0f172a', fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{std.name}</span>
-                        {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>Sitter her</span>}
-                        {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>(Opptatt)</span>}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={std.id}
+                          onClick={() => handleAssignStudent(std.id)}
+                          style={{
+                            textAlign: 'left', backgroundColor: '#f8fafc', color: '#0f172a', fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{std.name}</span>
+                          {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>Sitter her</span>}
+                          {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>(Opptatt)</span>}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {showTutorial && (
-          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: isSideStep ? 'flex-start' : 'center', paddingLeft: isSideStep ? '40px' : '0px', zIndex: 200, transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', width: '500px', maxWidth: '90vw', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', position: 'relative', pointerEvents: 'auto', border: '1px solid #cbd5e1', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+        {/* Tutorial Modal */}
+{showTutorial && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none' }}>
+            
+            {/* Dynamisk bakgrunn: 
+                - På steg 1 og 2: Gråer ut høyre side, holder venstre sidepanel åpent.
+                - På steg 3, 4 og 5: Gråer ut venstre sidepanel (280px), holder hele hovedområdet helt åpent. */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              ...(tutorialStep <= 2 ? {
+                left: '280px',
+                right: 0,
+                bottom: 0,
+              } : {
+                left: 0,
+                width: '280px',
+                bottom: 0,
+              }),
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              pointerEvents: 'auto'
+            }} />
+
+            {/* Selve veiledningsboksen:
+                - På steg 1 og 2: Større boks i midten.
+                - På steg 3, 4 og 5: Smalere boks (280px) som matcher sidepanelet perfekt og ligger øverst til venstre! */}
+            <div style={{
+              position: 'absolute',
+              ...(tutorialStep <= 2 ? {
+                top: '50%',
+                left: 'calc(280px + (100vw - 280px) / 2)',
+                transform: 'translate(-50%, -50%)',
+                width: '460px',
+              } : {
+                top: '12px',
+                left: '12px',
+                transform: 'none',
+                width: '256px', // Matcher sidepanelets bredde minus litt padding
+              }),
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '90vw',
+              maxHeight: 'calc(100vh - 24px)',
+              overflowY: 'auto',
+              padding: tutorialStep <= 2 ? '32px' : '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              pointerEvents: 'auto',
+              border: '1px solid #cbd5e1',
+              boxSizing: 'border-box',
+              transition: 'all 0.3s ease'
+            }}>
 
               <button
                 onClick={() => {
                   setShowTutorial(false);
                   localStorage.setItem('klassekart_seen_tutorial', 'true');
                 }}
-                style={{ position: 'absolute', right: '20px', top: '20px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: tutorialStep <= 2 ? '20px' : '12px', top: tutorialStep <= 2 ? '20px' : '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
               >
-                <X size={22} />
+                <X size={tutorialStep <= 2 ? 22 : 18} />
               </button>
 
-              <div style={{ marginBottom: '20px', backgroundColor: '#f0f9ff', padding: '20px', borderRadius: '50%' }}>
+              <div style={{ marginBottom: tutorialStep <= 2 ? '20px' : '12px', backgroundColor: '#f0f9ff', padding: tutorialStep <= 2 ? '20px' : '12px', borderRadius: '50%' }}>
                 {tutorialSteps[tutorialStep].icon}
               </div>
 
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '10px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: tutorialStep <= 2 ? '1.4rem' : '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', textAlign: 'center' }}>
                 {tutorialSteps[tutorialStep].title}
               </h2>
 
-              <div style={{ fontSize: '0.95rem', color: '#475569', textAlign: 'left', lineHeight: '1.6', marginBottom: '24px', padding: '0 10px', whiteSpace: 'pre-line', width: '100%' }}>
+              <div style={{ fontSize: tutorialStep <= 2 ? '0.95rem' : '0.82rem', color: '#475569', textAlign: 'left', lineHeight: '1.5', marginBottom: '20px', padding: '0 4px', whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                 {tutorialSteps[tutorialStep].desc}
               </div>
 
               {isInteractiveTutorial && !isCurrentStepCompleted() && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px', backgroundColor: '#fef3c7', padding: '8px 12px', borderRadius: '8px', width: '100%', justifyContent: 'center' }}>
-                  <Lock size={15} /> Gjør handlingen for å låse opp neste!
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.78rem', fontWeight: 700, marginBottom: '14px', backgroundColor: '#fef3c7', padding: '6px 10px', borderRadius: '8px', width: '100%', justifyContent: 'center', boxSizing: 'border-box', textAlign: 'center' }}>
+                  <Lock size={13} /> Gjør handlingen for å låse opp neste!
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
                 {tutorialSteps.map((_, idx) => (
                   <div
                     key={idx}
                     style={{
-                      width: tutorialStep === idx ? '24px' : '8px',
-                      height: '8px',
-                      borderRadius: '4px',
+                      width: tutorialStep === idx ? '20px' : '6px',
+                      height: '6px',
+                      borderRadius: '3px',
                       backgroundColor: tutorialStep === idx ? '#2563eb' : '#cbd5e1',
                       transition: 'all 0.3s'
                     }}
@@ -1098,15 +1140,15 @@ export default function App() {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: '8px', alignItems: 'center' }}>
                 <button
                   onClick={() => setTutorialStep(prev => Math.max(0, prev - 1))}
                   disabled={tutorialStep === 0}
                   style={{
-                    flex: 1, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px', fontSize: '0.9rem', fontWeight: 700, cursor: tutorialStep === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: tutorialStep === 0 ? 0.5 : 1
+                    flex: 1, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: tutorialStep === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: tutorialStep === 0 ? 0.5 : 1
                   }}
                 >
-                  <ArrowLeft size={16} /> Forrige
+                  <ArrowLeft size={14} /> Forrige
                 </button>
 
                 {tutorialStep < tutorialSteps.length - 1 ? (
@@ -1122,19 +1164,19 @@ export default function App() {
                       backgroundColor: isInteractiveTutorial && !isCurrentStepCompleted() ? '#94a3b8' : '#2563eb',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '10px',
-                      padding: '12px',
-                      fontSize: '0.9rem',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      fontSize: '0.82rem',
                       fontWeight: 700,
                       cursor: isInteractiveTutorial && !isCurrentStepCompleted() ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       opacity: isInteractiveTutorial && !isCurrentStepCompleted() ? 0.6 : 1
                     }}
                   >
-                    Neste <ArrowRight size={16} />
+                    Neste <ArrowRight size={14} />
                   </button>
                 ) : (
                   <button
@@ -1143,10 +1185,10 @@ export default function App() {
                       localStorage.setItem('klassekart_seen_tutorial', 'true');
                     }}
                     style={{
-                      flex: 1, backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                      flex: 1, backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
                     }}
                   >
-                    Start! <CheckCircle2 size={16} />
+                    Start! <CheckCircle2 size={14} />
                   </button>
                 )}
               </div>
@@ -1157,11 +1199,11 @@ export default function App() {
                   localStorage.setItem('klassekart_seen_tutorial', 'true');
                 }}
                 style={{
-                  marginTop: '12px',
+                  marginTop: '10px',
                   backgroundColor: 'transparent',
                   border: 'none',
                   color: '#64748b',
-                  fontSize: '0.8rem',
+                  fontSize: '0.75rem',
                   cursor: 'pointer',
                   textDecoration: 'underline'
                 }}
@@ -1173,12 +1215,13 @@ export default function App() {
           </div>
         )}
 
+        {/* Eksport / Utskrifts-modal */}
         {showExportModal && (
-          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '1150px', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
 
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>Skriv ut / lagre kart</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Skriv ut / lagre kart</h3>
                 <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
@@ -1193,8 +1236,8 @@ export default function App() {
                   }}
                 >
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>Klassekart: {currentClass?.name}</h2>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Dato: {new Date().toLocaleDateString('nb-NO')}</p>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Klassekart: {currentClass?.name}</h2>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Dato: {new Date().toLocaleDateString('nb-NO')}</p>
                   </div>
                   <div style={{ position: 'relative', width: '100%', height: '580px' }}>
                     {currentChart?.blocks.map((blk) => {
@@ -1242,9 +1285,10 @@ export default function App() {
         )}
 
       </div>
-     <div style={{ position: 'fixed', bottom: 0, right: 0, padding: '6px 12px', backgroundColor: 'transparent', color: '#9ca3af', fontSize: '0.65rem', fontWeight: 400, zIndex: 1000, pointerEvents: 'none', letterSpacing: '0.02em' }}>
-       Noah Belstad © MIT license
-     </div>
+
+      <div style={{ position: 'fixed', bottom: 0, right: 0, padding: '6px 12px', backgroundColor: 'transparent', color: '#9ca3af', fontSize: '0.65rem', fontWeight: 400, zIndex: 1000, pointerEvents: 'none', letterSpacing: '0.02em' }}>
+        Noah Belstad © MIT license
+      </div>
     </>
   );
 }
