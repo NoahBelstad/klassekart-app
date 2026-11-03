@@ -24,11 +24,18 @@ export interface SeatingChart {
   blocks: TableBlock[];
 }
 
-export interface ClassRoom {
+export interface Classroom {
+  id: string;
+  name: string;
+  seating_chart: SeatingChart;
+}
+
+export interface Class {
   id: string;
   name: string;
   students: Student[];
-  seating_chart: SeatingChart;
+  classrooms: Classroom[];
+  seating_chart?: SeatingChart | null;
 }
 
 const BLOCK_SIZE = 55;
@@ -36,8 +43,9 @@ const CANVAS_WIDTH = 1050;
 const CANVAS_HEIGHT = 680;
 
 export default function App() {
-  const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedClassroomId, setSelectedClassroomId] = useState<string | null>(null);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   const [newClassName, setNewClassName] = useState('');
@@ -60,6 +68,7 @@ export default function App() {
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  const [showChartDropdown, setShowChartDropdown] = useState(false);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCluster, setDragCluster] = useState<{ id: string; startX: number; startY: number; clusterOffsets: { id: string; offsetX: number; offsetY: number }[] } | null>(null);
@@ -79,17 +88,21 @@ export default function App() {
 
   const loadClasses = async () => {
     try {
-      const res: ClassRoom[] = await invoke('get_classes');
+      const res: Class[] = await invoke('get_classes');
       setClasses(res || []);
       if (res && res.length > 0 && !selectedClassId) {
-        setSelectedClassId(res[0].id);
+        const firstClass = res[0];
+        setSelectedClassId(firstClass.id);
+        if (firstClass.classrooms && firstClass.classrooms.length > 0) {
+          setSelectedClassroomId(firstClass.classrooms[0].id);
+        }
       }
     } catch (e) {
       console.error('Failed to load classes:', e);
     }
   };
 
-  const saveClassesToBackend = async (updatedClasses: ClassRoom[]) => {
+  const saveClassesToBackend = async (updatedClasses: Class[]) => {
     setClasses(updatedClasses);
     try {
       await invoke('save_classes', { classes: updatedClasses });
@@ -99,23 +112,26 @@ export default function App() {
   };
 
   const currentClass = classes.find((c) => c.id === selectedClassId) || null;
-  const currentChart = currentClass?.seating_chart || null;
+  const currentClassroom = currentClass?.classrooms.find((r) => r.id === selectedClassroomId) || null;
+  const currentChart = currentClassroom?.seating_chart || null;
 
   const handleAddClass = () => {
     if (!newClassName.trim()) return;
-    const newClass: ClassRoom = {
+    const newChartId = 'chart-' + Date.now();
+    const newClass: Class = {
       id: 'class-' + Date.now(),
       name: newClassName.trim(),
       students: [],
-      seating_chart: {
-        id: 'chart-' + Date.now(),
+      classrooms: [{
+        id: newChartId,
         name: 'Klasserom',
-        blocks: []
-      },
+        seating_chart: { id: newChartId, name: 'Klasserom', blocks: [] }
+      }],
     };
     const updated = [...classes, newClass];
     saveClassesToBackend(updated);
     setSelectedClassId(newClass.id);
+    setSelectedClassroomId(newChartId);
     setNewClassName('');
   };
 
@@ -127,7 +143,9 @@ export default function App() {
     const updated = classes.filter(c => c.id !== classId);
     saveClassesToBackend(updated);
     if (selectedClassId === classId) {
-      setSelectedClassId(updated.length > 0 ? updated[0].id : null);
+      const newClass = updated.length > 0 ? updated[0] : null;
+      setSelectedClassId(newClass ? newClass.id : null);
+      setSelectedClassroomId(newClass && newClass.classrooms && newClass.classrooms.length > 0 ? newClass.classrooms[0].id : null);
     }
   };
 
@@ -150,13 +168,19 @@ export default function App() {
     if (!selectedClassId) return;
     const updated = classes.map((c) => {
       if (c.id === selectedClassId) {
-        const updatedBlocks = c.seating_chart.blocks.map((blk) =>
-          blk.student_id === stdId ? { ...blk, student_id: null } : blk
-        );
+        const updatedBlocks = c.classrooms.map(r => ({
+          ...r,
+          seating_chart: {
+            ...r.seating_chart,
+            blocks: r.seating_chart.blocks.map((blk) =>
+              blk.student_id === stdId ? { ...blk, student_id: null } : blk
+            ),
+          },
+        }));
         return {
           ...c,
           students: c.students.filter((s) => s.id !== stdId),
-          seating_chart: { ...c.seating_chart, blocks: updatedBlocks },
+          classrooms: updatedBlocks,
         };
       }
       return c;
@@ -165,17 +189,65 @@ export default function App() {
   };
 
   const updateCurrentChart = (updater: (chart: SeatingChart) => SeatingChart) => {
-    if (!selectedClassId) return;
+    if (!selectedClassId || !selectedClassroomId) return;
     const updated = classes.map((c) => {
       if (c.id === selectedClassId) {
         return {
           ...c,
-          seating_chart: updater(c.seating_chart),
+          classrooms: c.classrooms.map((r) => {
+            if (r.id === selectedClassroomId) {
+              return { ...r, seating_chart: updater(r.seating_chart) };
+            }
+            return r;
+          }),
         };
       }
       return c;
     });
     saveClassesToBackend(updated);
+  };
+
+  const handleAddChart = () => {
+    if (!selectedClassId) return;
+    const name = window.prompt('Gi kartet et navn:', 'Nytt klasserom');
+    if (!name || !name.trim()) return;
+    const newChartId = 'chart-' + Date.now();
+    const newClassroom: Classroom = {
+      id: newChartId,
+      name: name.trim(),
+      seating_chart: { id: newChartId, name: name.trim(), blocks: [] },
+    };
+    const updated = classes.map((c) => {
+      if (c.id === selectedClassId) {
+        return { ...c, classrooms: [...c.classrooms, newClassroom] };
+      }
+      return c;
+    });
+    saveClassesToBackend(updated);
+    setSelectedClassroomId(newChartId);
+  };
+
+  const handleRemoveChart = (chartId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cls = classes.find(c => c.id === selectedClassId);
+    if (!cls) return;
+    const chart = cls.classrooms.find(r => r.id === chartId);
+    if (!window.confirm(`Er du sikker på at du vil slette klasserommet "${chart?.name || ''}" og alt tilhørende innhold?`)) return;
+    const updated = classes.map((c) => {
+      if (c.id === selectedClassId) {
+        return { ...c, classrooms: c.classrooms.filter((r) => r.id !== chartId) };
+      }
+      return c;
+    });
+    saveClassesToBackend(updated);
+    if (selectedClassroomId === chartId) {
+      const remaining = cls.classrooms.filter(r => r.id !== chartId);
+      setSelectedClassroomId(remaining.length > 0 ? remaining[0].id : null);
+    }
+  };
+
+  const handleSelectChart = (chartId: string) => {
+    setSelectedClassroomId(chartId);
   };
 
   const handleAddGroupShape = (type: 1 | 2 | 3 | 4) => {
@@ -680,9 +752,50 @@ export default function App() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
 
           <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-              {currentClass ? `Klasserom: ${currentClass.name}` : 'Velg en klasse'}
-            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                {currentClass ? currentClass.name : 'Velg en klasse'}
+              </h2>
+              {currentClass && (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <button
+                    onClick={() => setShowChartDropdown(!showChartDropdown)}
+                    style={{ fontSize: '0.85rem', fontWeight: 700, padding: '6px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#eff6ff', color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+                  >
+                    {currentClassroom?.name || 'Velg klasserom'}
+                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{showChartDropdown ? '▲' : '▼'}</span>
+                  </button>
+                  {showChartDropdown && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, backgroundColor: '#ffffff', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', padding: '6px', minWidth: '220px', zIndex: 60, border: 'none' }}>
+                      {currentClass.classrooms.map((room) => (
+                        <button
+                          key={room.id}
+                          onClick={() => { handleSelectChart(room.id); setShowChartDropdown(false); }}
+                          style={{ width: '100%', textAlign: 'left', backgroundColor: room.id === selectedClassroomId ? '#eff6ff' : 'transparent', border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRemoveChart(room.id, e); }}
+                            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px', marginLeft: '8px', flexShrink: 0 }}
+                            title="Slett klasserom"
+                            disabled={currentClass.classrooms.length <= 1}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </button>
+                      ))}
+                      <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '4px 0' }} />
+                      <button
+                        onClick={() => { handleAddChart(); setShowChartDropdown(false); }}
+                        style={{ width: '100%', textAlign: 'left', backgroundColor: '#059669', border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Plus size={16} /> Legg til nytt klasserom
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               {currentClass && (
@@ -911,11 +1024,11 @@ export default function App() {
                   {currentClass.students
                     .filter((std) => std.name.toLowerCase().includes(searchStudent.toLowerCase()))
                     .map((std) => {
-                    const activeBlock = currentClass.seating_chart.blocks.find(b => b.id === activeBlockId);
+                    const activeBlock = currentChart ? currentChart.blocks.find(b => b.id === activeBlockId) : null;
                     const isSeatedOnThisBlock = activeBlock?.student_id === std.id;
-                    const isSeatedElsewhere = currentClass.seating_chart.blocks.some(
+                    const isSeatedElsewhere = currentChart ? currentChart.blocks.some(
                       (b) => b.student_id === std.id && b.id !== activeBlockId
-                    );
+                    ) : false;
 
                     return (
                       <button
