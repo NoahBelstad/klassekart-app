@@ -28,11 +28,21 @@ pub struct SeatingChart {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Classroom {
+    pub id: String,
+    pub name: String,
+    pub seating_chart: SeatingChart,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Class {
     pub id: String,
     pub name: String,
     pub students: Vec<Student>,
-    pub seating_chart: SeatingChart,
+    #[serde(default)]
+    pub classrooms: Vec<Classroom>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seating_chart: Option<SeatingChart>,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -82,7 +92,18 @@ fn main() {
             let path = get_storage_path(app.handle());
             if path.exists() {
                 if let Ok(content) = fs::read_to_string(path) {
-                    if let Ok(classes) = serde_json::from_str::<Vec<Class>>(&content) {
+                    if let Ok(mut classes) = serde_json::from_str::<Vec<Class>>(&content) {
+                        // Convert legacy data: if a class has no classrooms but has a seating_chart, create a classroom from it
+                        for cls in &mut classes {
+                            if cls.classrooms.is_empty() && cls.seating_chart.is_some() {
+                                let chart = cls.seating_chart.take().unwrap();
+                                cls.classrooms.push(Classroom {
+                                    id: chart.id,
+                                    name: chart.name,
+                                    seating_chart: chart,
+                                });
+                            }
+                        }
                         let state: State<AppState> = app.state();
                         state.0.lock().unwrap().classes = classes;
                     }
