@@ -614,7 +614,7 @@ export default function App() {
       <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
 
         {/* Sidepanel */}
-        <div style={{ width: '280px', minWidth: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+        <div style={{ width: '280px', minWidth: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', zIndex: 10 }}>
           <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <LayoutGrid size={24} /> Klassekart
@@ -852,8 +852,8 @@ export default function App() {
             </div>
           )}
 
-          {/* Canvas-område med responsiv rulling */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'auto', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Canvas-område med rikelig med padding slik at hele rutenettet alltid er synlig og sentrert */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'auto', padding: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', minHeight: `${CANVAS_HEIGHT + 80}px` }}>
             {currentChart ? (
               <div
                 onMouseMove={(e) => {
@@ -885,7 +885,7 @@ export default function App() {
                 }}
                 style={{
                   position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: '#f0f9ff', borderRadius: '16px', border: '2px solid #bae6fd', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden',
-                  backgroundImage: 'radial-gradient(#38bdf8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', flexShrink: 0
+                  backgroundImage: 'radial-gradient(#38bdf8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', flexShrink: 0, margin: 'auto'
                 }}
               >
                 {currentChart.blocks.map((blk) => {
@@ -1043,12 +1043,10 @@ export default function App() {
         </div>
 
         {/* Tutorial Modal */}
-{showTutorial && (
+        {showTutorial && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none' }}>
             
-            {/* Dynamisk bakgrunn: 
-                - På steg 1 og 2: Gråer ut høyre side, holder venstre sidepanel åpent.
-                - På steg 3, 4 og 5: Gråer ut venstre sidepanel (280px), holder hele hovedområdet helt åpent. */}
+            {/* Dynamisk bakgrunn */}
             <div style={{
               position: 'absolute',
               top: 0,
@@ -1065,9 +1063,7 @@ export default function App() {
               pointerEvents: 'auto'
             }} />
 
-            {/* Selve veiledningsboksen:
-                - På steg 1 og 2: Større boks i midten.
-                - På steg 3, 4 og 5: Smalere boks (280px) som matcher sidepanelet perfekt og ligger øverst til venstre! */}
+            {/* Selve veiledningsboksen */}
             <div style={{
               position: 'absolute',
               ...(tutorialStep <= 2 ? {
@@ -1079,7 +1075,7 @@ export default function App() {
                 top: '12px',
                 left: '12px',
                 transform: 'none',
-                width: '256px', // Matcher sidepanelets bredde minus litt padding
+                width: '256px',
               }),
               backgroundColor: '#ffffff',
               borderRadius: '16px',
