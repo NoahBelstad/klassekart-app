@@ -64,6 +64,9 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragCluster, setDragCluster] = useState<{ id: string; startX: number; startY: number; clusterOffsets: { id: string; offsetX: number; offsetY: number }[] } | null>(null);
 
+  const [searchStudent, setSearchStudent] = useState('');
+  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+
   const printAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -483,27 +486,27 @@ export default function App() {
       icon: <LayoutGrid size={48} color="#2563eb" />
     },
     {
-      title: "Steg 1: Lag en klasse 📝",
+      title: "Steg 1: Lag klasse 📝",
       desc: "Se helt til venstre på skjermen:\n\n1. Klikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <UserPlus size={48} color="#059669" />
     },
     {
-      title: "Steg 2: Legg til en elev 👤",
+      title: "Steg 2: Legg til elev 👤",
       desc: "Se i sidepanelet til venstre under elevlisten:\n\n1. Skriv inn navnet på en elev.\n2. Trykk på den grønne knappen for å legge eleven til i listen.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <UserPlus size={48} color="#059669" />
     },
     {
       title: "Steg 3: Bygg pulter 🪑",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Bygg / Flytt Pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Bygg / Flytt pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <Move size={48} color="#2563eb" />
     },
     {
-      title: "Steg 4: Sette elev på pult 👤",
-      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Plassér Elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
+      title: "Steg 4: Plassér elev 👤",
+      desc: "Se øverst på skjermen:\n\n1. Klikk på knappen 'Plassér elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
       icon: <MousePointer size={48} color="#d97706" />
     },
     {
-      title: "Steg 5: Skriv ut eller lagre PDF 🖨️",
+      title: "Steg 5: Skriv ut / lagre 🖨️",
       desc: "Når du er ferdig med å plassere elever:\n\n1. Klikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Der kan du skrive ut arket på en fysisk skriver.",
       icon: <Printer size={48} color="#7c3aed" />
     }
@@ -568,13 +571,14 @@ export default function App() {
           </div>
 
           <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Velg Klasse</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Velg klasse</div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
               <input
                 type="text"
                 placeholder="F.eks. 10B..."
                 value={newClassName}
                 onChange={(e) => setNewClassName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddClass()}
                 style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
               />
               <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
@@ -616,9 +620,10 @@ export default function App() {
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <input
                   type="text"
-                  placeholder="Elevens navn..."
+                  placeholder="Elevnavn..."
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
                   style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
                 />
                 <button onClick={handleAddStudent} style={{ backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 700 }}>
@@ -628,7 +633,30 @@ export default function App() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {currentClass.students.map((std) => (
-                  <div key={std.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 10px', borderRadius: '6px', color: '#1e293b', fontWeight: 500 }}>
+                  <div
+                    key={std.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', std.id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      const ghost = document.createElement('div');
+                      ghost.textContent = std.name;
+                      ghost.style.position = 'absolute';
+                      ghost.style.top = '-1000px';
+                      ghost.style.left = '-1000px';
+                      ghost.style.padding = '6px 12px';
+                      ghost.style.backgroundColor = '#e5e7eb';
+                      ghost.style.color = '#374151';
+                      ghost.style.fontSize = '0.75rem';
+                      ghost.style.fontWeight = '600';
+                      ghost.style.borderRadius = '6px';
+                      ghost.style.whiteSpace = 'nowrap';
+                      ghost.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                      document.body.appendChild(ghost);
+                      e.dataTransfer.setDragImage(ghost, 20, 20);
+                      setTimeout(() => document.body.removeChild(ghost), 0);
+                    }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 10px', borderRadius: '6px', color: '#1e293b', fontWeight: 500, cursor: 'grab' }}>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '4px' }}>{std.name}</span>
                     <button onClick={() => handleRemoveStudent(std.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
                       <X size={14} />
@@ -671,13 +699,13 @@ export default function App() {
                   onClick={() => { setMode('view'); setActiveBlockId(null); }}
                   style={{ fontSize: '0.85rem', padding: '8px 16px', background: mode === 'view' ? '#ffffff' : 'transparent', color: mode === 'view' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'view' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                 >
-                  <MousePointer size={15} /> Plassér Elever
+                  <MousePointer size={15} /> Plassér elever
                 </button>
                 <button
                   onClick={() => { setMode('edit'); setActiveBlockId(null); }}
                   style={{ fontSize: '0.85rem', padding: '8px 16px', background: mode === 'edit' ? '#ffffff' : 'transparent', color: mode === 'edit' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'edit' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                 >
-                  <Move size={15} /> Bygg / Flytt Pulter
+                  <Move size={15} /> Bygg / Flytt pulter
                 </button>
               </div>
             </div>
@@ -781,6 +809,13 @@ export default function App() {
                         e.preventDefault();
                         if (mode === 'edit') {
                           handleDeleteBlock(blk.id);
+                        } else if (mode === 'view') {
+                          if (blk.student_id) {
+                            updateCurrentChart((chart) => ({
+                              ...chart,
+                              blocks: chart.blocks.map((b) => (b.id === blk.id ? { ...b, student_id: null } : b)),
+                            }));
+                          }
                         }
                       }}
                       onDoubleClick={(e) => {
@@ -793,13 +828,30 @@ export default function App() {
                         e.stopPropagation();
                         if (mode === 'view') setActiveBlockId(blk.id);
                       }}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverBlockId(blk.id); }}
+                      onDragLeave={() => setDragOverBlockId(null)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const studentId = e.dataTransfer.getData('text/plain');
+                        if (studentId) {
+                          updateCurrentChart((chart) => ({
+                            ...chart,
+                            blocks: chart.blocks.map((b) => {
+                              if (b.id === blk.id) return { ...b, student_id: studentId };
+                              if (b.student_id === studentId) return { ...b, student_id: null };
+                              return b;
+                            }),
+                          }));
+                          setDragOverBlockId(null);
+                        }
+                      }}
                       style={{
                         position: 'absolute', left: blk.x, top: blk.y, width: BLOCK_SIZE, height: BLOCK_SIZE,
                         ...blockStyle,
                         padding: '4px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                         cursor: mode === 'edit' ? 'grab' : 'pointer',
-                        backgroundColor: assignedStudent ? '#2563eb' : '#10b981',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.08)',
+                        backgroundColor: dragOverBlockId === blk.id ? '#047857' : (assignedStudent ? '#2563eb' : '#10b981'),
+                        boxShadow: dragOverBlockId === blk.id ? '0 0 0 3px rgba(4,120,87,0.6)' : '0 4px 6px -1px rgba(0,0,0,0.08)',
                         transition: isDragging ? 'none' : 'background-color 0.15s'
                       }}
                       title={mode === 'edit' ? 'Høyreklikk for å slette, dobbeltklikk for å ufeste' : ''}
@@ -833,7 +885,7 @@ export default function App() {
               <div style={{ position: 'absolute', right: '24px', top: '24px', width: '280px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563eb' }}>
-                    Velg elev til denne pulten:
+                    Velg elev til pult:
                   </h3>
                   <button onClick={() => setActiveBlockId(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                     <X size={18} />
@@ -845,10 +897,20 @@ export default function App() {
                     onClick={() => handleAssignStudent(null)}
                     style={{ textAlign: 'left', backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid #fecaca', cursor: 'pointer', fontWeight: 700 }}
                   >
-                    Tom pult (Fjern elev)
+                    Tøm pult
                   </button>
 
-                  {currentClass.students.map((std) => {
+                  <input
+                    type="text"
+                    placeholder="Søk elev..."
+                    value={searchStudent}
+                    onChange={(e) => setSearchStudent(e.target.value)}
+                    style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: '#0f172a', outline: 'none', marginBottom: '6px' }}
+                  />
+
+                  {currentClass.students
+                    .filter((std) => std.name.toLowerCase().includes(searchStudent.toLowerCase()))
+                    .map((std) => {
                     const activeBlock = currentClass.seating_chart.blocks.find(b => b.id === activeBlockId);
                     const isSeatedOnThisBlock = activeBlock?.student_id === std.id;
                     const isSeatedElsewhere = currentClass.seating_chart.blocks.some(
@@ -904,7 +966,7 @@ export default function App() {
 
               {isInteractiveTutorial && !isCurrentStepCompleted() && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px', backgroundColor: '#fef3c7', padding: '8px 12px', borderRadius: '8px', width: '100%', justifyContent: 'center' }}>
-                  <Lock size={15} /> Utfør handlingen i appen for å låse opp neste knappen!
+                  <Lock size={15} /> Gjør handlingen for å låse opp neste!
                 </div>
               )}
 
@@ -971,7 +1033,7 @@ export default function App() {
                       flex: 1, backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                     }}
                   >
-                    Start appen! <CheckCircle2 size={16} />
+                    Start! <CheckCircle2 size={16} />
                   </button>
                 )}
               </div>
@@ -991,7 +1053,7 @@ export default function App() {
                   textDecoration: 'underline'
                 }}
               >
-                Hopp over veiledning
+                Hopp over
               </button>
 
             </div>
@@ -1003,7 +1065,7 @@ export default function App() {
             <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '1150px', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
 
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>Skriv ut eller lagre klassekart</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>Skriv ut / lagre kart</h3>
                 <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
@@ -1067,6 +1129,9 @@ export default function App() {
         )}
 
       </div>
+     <div style={{ position: 'fixed', bottom: 0, right: 0, padding: '6px 12px', backgroundColor: 'transparent', color: '#9ca3af', fontSize: '0.65rem', fontWeight: 400, zIndex: 1000, pointerEvents: 'none', letterSpacing: '0.02em' }}>
+       Noah Belstad © MIT license
+     </div>
     </>
   );
 }
