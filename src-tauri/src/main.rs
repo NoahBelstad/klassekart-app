@@ -93,13 +93,12 @@ fn main() {
             if path.exists() {
                 if let Ok(content) = fs::read_to_string(path) {
                     if let Ok(mut classes) = serde_json::from_str::<Vec<Class>>(&content) {
-                        // Convert legacy data: if a class has no classrooms but has a seating_chart, create a classroom from it
                         for cls in &mut classes {
                             if cls.classrooms.is_empty() && cls.seating_chart.is_some() {
                                 let chart = cls.seating_chart.take().unwrap();
                                 cls.classrooms.push(Classroom {
-                                    id: chart.id,
-                                    name: chart.name,
+                                    id: chart.id.clone(),
+                                    name: chart.name.clone(),
                                     seating_chart: chart,
                                 });
                             }
