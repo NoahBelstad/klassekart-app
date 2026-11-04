@@ -3,8 +3,10 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   Plus, LayoutGrid, Move, MousePointer,
   UserPlus, X, Trash2, Grid, HelpCircle, AlertTriangle, Printer, Copy,
-  ArrowRight, ArrowLeft, CheckCircle2, Lock
+  ArrowRight, ArrowLeft, CheckCircle2, Lock, Moon, Sun
 } from 'lucide-react';
+
+// ---------------------------------------------------------------
 
 export interface Student {
   id: string;
@@ -101,12 +103,62 @@ export default function App() {
 
   const [searchStudent, setSearchStudent] = useState('');
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('klassekart_theme');
+    return (saved === 'dark' ? 'dark' : 'light') as 'light' | 'dark';
+  });
 
   const printAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadClasses();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('klassekart_theme', theme);
+  }, [theme]);
+
+  // ---- Theme colour variables (dynamic) ----
+  const COLOR_BG_MAIN   = theme === 'dark' ? '#0f172a' : '#f8fafc';
+  const COLOR_BG_LIGHT_BLUE = theme === 'dark' ? '#1e293b' : '#eff6ff';
+  const COLOR_BG_FA     = theme === 'dark' ? '#1e293b' : '#f3f4f6';
+  const COLOR_BG_LIGHT  = theme === 'dark' ? '#0f172a' : '#f1f5f9';
+  const COLOR_WHITE     = theme === 'dark' ? '#1e293b' : '#ffffff';
+  const COLOR_TEXT_MAIN = theme === 'dark' ? '#f8fafc' : '#0f172a';
+  const COLOR_TEXT_MUTED = theme === 'dark' ? '#94a3b8' : '#64748b';
+  const COLOR_TEXT_DARK  = theme === 'dark' ? '#cbd5e1' : '#334155';
+  const COLOR_TEXT_SLATE = theme === 'dark' ? '#94a3b8' : '#475569';
+  const COLOR_TEXT_DEEP  = theme === 'dark' ? '#e2e8f0' : '#1e293b';
+  const COLOR_TEXT_SMALL = theme === 'dark' ? '#64748b' : '#94a3b8';
+  const COLOR_PRIMARY    = theme === 'dark' ? '#6b7aa8' : '#2563eb';
+  const COLOR_PRIMARY_DARK = theme === 'dark' ? '#55689c' : '#1d4ed8';
+  const COLOR_BLUE_LIGHT_TEXT = theme === 'dark' ? '#1e293b' : '#93c5fd';
+  const COLOR_BORDER_BLUE = theme === 'dark' ? '#334155' : '#bfdbfe';
+  const COLOR_GREEN      = theme === 'dark' ? '#2e7d53' : '#15803d';
+  const COLOR_GREEN_LIGHT = theme === 'dark' ? '#37906d' : '#22c55e';
+  const COLOR_GREEN_BTN  = theme === 'dark' ? '#2e7d53' : '#15803d';
+  const COLOR_GREEN_OK   = theme === 'dark' ? '#2e7d53' : '#16a34a';
+  const COLOR_GREEN_LIGHT_TEXT = theme === 'dark' ? '#0f172a' : '#d1fae5';
+  const COLOR_GREEN_RING = theme === 'dark' ? 'rgba(52,211,153,0.5)' : 'rgba(16,185,129,0.6)';
+  const COLOR_RED        = theme === 'dark' ? '#f87171' : '#ef4444';
+  const COLOR_RED_BORDER = theme === 'dark' ? '#b91c1c' : '#fecaca';
+  const COLOR_RED_BG     = theme === 'dark' ? '#450a0a' : '#fef2f2';
+  const COLOR_AMBER      = theme === 'dark' ? '#fbbf24' : '#f59e0b';
+  const COLOR_WARN_BG    = theme === 'dark' ? '#422006' : '#fef3c7';
+  const COLOR_PURPLE    = theme === 'dark' ? '#a78bfa' : '#7c3aed';
+  const COLOR_FRONT_BG   = theme === 'dark' ? '#6b7aa8' : '#2563eb';
+  const COLOR_FRONT_DARK = theme === 'dark' ? '#55689c' : '#1d4ed8';
+  const COLOR_FRONT_TEXT = theme === 'dark' ? '#e8e6f2' : '#dbeafe';
+  const COLOR_DISABLED   = theme === 'dark' ? '#475569' : '#94a3b8';
+  const COLOR_BORDER     = theme === 'dark' ? '#334155' : '#e2e8f0';
+  const COLOR_BORDER_LIGHT = theme === 'dark' ? '#475569' : '#cbd5e1';
+  const COLOR_CANVAS_BG  = theme === 'dark' ? '#0f172a' : '#f1f5f9';
+  const COLOR_CANVAS_BORDER = theme === 'dark' ? '#334155' : '#cbd5e1';
+  const COLOR_DOT_GRID   = theme === 'dark' ? '#334155' : '#cbd5e1';
+  const COLOR_GHOST_BG   = theme === 'dark' ? '#0f172a' : '#f3f4f6';
+  const COLOR_GHOST_TEXT = theme === 'dark' ? '#94a3b8' : '#475569';
+  const COLOR_OVERLAY_DARK = theme === 'dark' ? 'rgba(10,10,15,0.6)' : 'rgba(15,23,42,0.35)';
+  const COLOR_BACKDROP   = theme === 'dark' ? 'rgba(10,10,15,0.7)' : 'rgba(15,23,42,0.45)';
 
   useEffect(() => {
     localStorage.setItem('klassekart_snap_grid', JSON.stringify(snapToGridEnabled));
@@ -524,12 +576,12 @@ export default function App() {
     if (block.is_front) {
       return {
         borderRadius: '8px',
-        border: '2px solid #4338ca',
+        border: '2px solid COLOR_FRONT_DARK',
       };
     }
     if (isBeingDragged) {
-      const defaultColor = isPrint ? '#1d4ed8' : '#047857';
-      const assignedColor = isPrint ? '#1d4ed8' : '#1d4ed8';
+      const defaultColor = isPrint ? COLOR_PRIMARY_DARK : COLOR_GREEN;
+      const assignedColor = isPrint ? COLOR_PRIMARY_DARK : COLOR_PRIMARY_DARK;
       const borderColor = isAssigned ? assignedColor : defaultColor;
       return {
         borderRadius: '10px',
@@ -551,8 +603,8 @@ export default function App() {
     const br = hasBottom || hasRight ? '0px' : '10px';
     const bl = hasBottom || hasLeft ? '0px' : '10px';
 
-    const defaultColor = isPrint ? '#1d4ed8' : '#047857';
-    const assignedColor = isPrint ? '#1d4ed8' : '#1d4ed8';
+    const defaultColor = isPrint ? COLOR_PRIMARY_DARK : COLOR_GREEN;
+    const assignedColor = isPrint ? COLOR_PRIMARY_DARK : COLOR_PRIMARY_DARK;
     const borderColor = isAssigned ? assignedColor : defaultColor;
 
     return {
@@ -596,32 +648,32 @@ export default function App() {
     {
       title: "Velkommen til Klassekart! 🏫",
       desc: "Her kan du lage et digitalt oversiktskart over klasserommet ditt, holde styr på hvem som sitter hvor, og skrive ut arket på papir.",
-      icon: <LayoutGrid size={48} color="#2563eb" />
+      icon: <LayoutGrid size={48} color={COLOR_PRIMARY} />
     },
     {
       title: "Steg 1: Lag klasse 📝",
       desc: "1. Se helt til venstre på skjermen:\nKlikk med musa i feltet der det står 'F.eks. 10B...'.\n2. Skriv navnet på klassen på tastaturet og trykk på den blå knappen 'Ny klasse'.\n\n*(Fullfør dette for å låse opp neste steg!)*",
-      icon: <UserPlus size={48} color="#059669" />
+      icon: <UserPlus size={48} color={COLOR_GREEN_BTN} />
     },
     {
       title: "Steg 2: Legg til elev 👤",
       desc: "1. Se i sidepanelet til venstre under elevlisten:\nSkriv inn navnet på en elev.\n2. Trykk på den grønne knappen for å legge eleven til i listen.\n\n*(Fullfør dette for å låse opp neste steg!)*",
-      icon: <UserPlus size={48} color="#059669" />
+      icon: <UserPlus size={48} color={COLOR_GREEN_BTN} />
     },
     {
       title: "Steg 3: Bygg pulter 🪑",
       desc: "1. Se øverst på skjermen:\nKlikk på knappen 'Bygg / Flytt pulter'.\n2. Trykk på f.eks. '+ 1 Pult' for å få en pult ut på det rutete feltet.\n3. Hvis du drar flere pulter inntil hverandre, kobler de seg automatisk sammen til større grupper!\n\n*(Fullfør dette for å låse opp neste steg!)*",
-      icon: <Move size={48} color="#2563eb" />
+      icon: <Move size={48} color={COLOR_PRIMARY} />
     },
     {
       title: "Steg 4: Plassér elev 👤",
       desc: "1. Se øverst på skjermen:\nKlikk på knappen 'Plassér elever'.\n2. Klikk med musa på pulten du lagde i stad.\n3. Klikk på elevens navn i menyen som dukker opp til høyre.\n\n*(Fullfør dette for å låse opp neste steg!)*",
-      icon: <MousePointer size={48} color="#d97706" />
+      icon: <MousePointer size={48} color={COLOR_AMBER} />
     },
     {
       title: "Steg 5: Skriv ut / lagre 🖨️",
       desc: "1. Når du er ferdig med å plassere elever:\nKlikk på den blå knappen 'Skriv ut / Lagre kart' helt øverst til høyre.\n2. Der kan du skrive ut arket på en fysisk skriver.",
-      icon: <Printer size={48} color="#7c3aed" />
+      icon: <Printer size={48} color={COLOR_PURPLE} />
     }
   ];
 
@@ -661,11 +713,11 @@ export default function App() {
         }
       `}</style>
 
-      <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f8fafc', color: '#0f172a', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
+      <div className={theme === 'dark' ? 'dark' : undefined} style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: COLOR_BG_MAIN, color: COLOR_TEXT_MAIN, fontFamily: 'system-ui, sans-serif', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
 
         {/* Sidepanel */}
-        <div style={{ width: '280px', minWidth: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', zIndex: 10 }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ width: '280px', minWidth: '260px', backgroundColor: COLOR_WHITE, borderRight: '1px solid COLOR_BORDER', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', zIndex: 10 }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid COLOR_BORDER', fontSize: '1.2rem', fontWeight: 'bold', color: COLOR_PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <LayoutGrid size={24} /> Klassekart
             </div>
@@ -675,15 +727,26 @@ export default function App() {
                 setTutorialStep(0);
                 setShowTutorial(true);
               }}
-              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ background: 'none', border: 'none', color: COLOR_TEXT_MUTED, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               title="Hjelp og veiledning"
             >
               <HelpCircle size={20} />
             </button>
+            <button
+              onClick={() => {
+                const next = theme === 'dark' ? 'light' : 'dark';
+                setTheme(next);
+                localStorage.setItem('klassekart_theme', next);
+              }}
+              style={{ background: 'none', border: 'none', color: COLOR_TEXT_MUTED, cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: '6px' }}
+              title={theme === 'dark' ? 'Bytt til lys tema' : 'Bytt til mørkt tema'}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
           </div>
 
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Velg klasse</div>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid COLOR_BORDER' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: COLOR_TEXT_DARK, textTransform: 'uppercase', marginBottom: '6px' }}>Velg klasse</div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
               <input
                 type="text"
@@ -691,9 +754,9 @@ export default function App() {
                 value={newClassName}
                 onChange={(e) => setNewClassName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddClass()}
-                style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
+                style={{ flex: 1, backgroundColor: COLOR_WHITE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: COLOR_TEXT_MAIN, outline: 'none', minWidth: 0 }}
               />
-              <button onClick={handleAddClass} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+              <button onClick={handleAddClass} style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Ny klasse
               </button>
             </div>
@@ -705,18 +768,18 @@ export default function App() {
                   onClick={() => setSelectedClassId(cls.id)}
                   style={{
                     width: '100%', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    backgroundColor: cls.id === selectedClassId ? '#eff6ff' : 'transparent',
-                    color: cls.id === selectedClassId ? '#1d4ed8' : '#334155',
-                    border: cls.id === selectedClassId ? '1px solid #bfdbfe' : '1px solid transparent'
+                    backgroundColor: cls.id === selectedClassId ? COLOR_BG_LIGHT_BLUE : 'transparent',
+                    color: cls.id === selectedClassId ? COLOR_PRIMARY_DARK : COLOR_TEXT_SLATE,
+                    border: cls.id === selectedClassId ? '1px solid COLOR_BORDER_BLUE' : '1px solid transparent'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cls.name}</span>
-                    <span style={{ fontSize: '0.7rem', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '10px', color: '#475569', flexShrink: 0 }}>{cls.students.length}</span>
+                    <span style={{ fontSize: '0.7rem', backgroundColor: COLOR_BORDER, padding: '2px 6px', borderRadius: '10px', color: COLOR_TEXT_DARK, flexShrink: 0 }}>{cls.students.length}</span>
                   </div>
                   <button
                     onClick={(e) => handleDeleteClass(cls.id, e)}
-                    style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                    style={{ background: 'none', border: 'none', color: COLOR_RED, cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
                     title="Slett klasse"
                   >
                     <Trash2 size={14} />
@@ -728,7 +791,7 @@ export default function App() {
 
           {currentClass && (
             <div style={{ padding: '14px 16px', flex: 1, overflowY: 'auto' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>Elevliste ({currentClass.students.length})</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: COLOR_TEXT_DARK, textTransform: 'uppercase', marginBottom: '6px' }}>Elevliste ({currentClass.students.length})</div>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <input
                   type="text"
@@ -736,9 +799,9 @@ export default function App() {
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
-                  style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: '#0f172a', outline: 'none', minWidth: 0 }}
+                  style={{ flex: 1, backgroundColor: COLOR_WHITE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', color: COLOR_TEXT_MAIN, outline: 'none', minWidth: 0 }}
                 />
-                <button onClick={handleAddStudent} style={{ backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 700 }}>
+                <button onClick={handleAddStudent} style={{ backgroundColor: COLOR_GREEN_BTN, color: 'white', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 700 }}>
                   <UserPlus size={16} />
                 </button>
               </div>
@@ -757,8 +820,8 @@ export default function App() {
                       ghost.style.top = '-1000px';
                       ghost.style.left = '-1000px';
                       ghost.style.padding = '6px 12px';
-                      ghost.style.backgroundColor = '#e5e7eb';
-                      ghost.style.color = '#374151';
+                      ghost.style.backgroundColor = COLOR_GHOST_BG;
+                      ghost.style.color = COLOR_GHOST_TEXT;
                       ghost.style.fontSize = '0.75rem';
                       ghost.style.fontWeight = '600';
                       ghost.style.borderRadius = '6px';
@@ -768,9 +831,9 @@ export default function App() {
                       e.dataTransfer.setDragImage(ghost, 20, 20);
                       setTimeout(() => document.body.removeChild(ghost), 0);
                     }}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px 10px', borderRadius: '6px', color: '#1e293b', fontWeight: 500, cursor: 'grab' }}>
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', backgroundColor: COLOR_BG_MAIN, border: '1px solid COLOR_BORDER', padding: '6px 10px', borderRadius: '6px', color: COLOR_TEXT_DEEP, fontWeight: 500, cursor: 'grab' }}>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '4px' }}>{std.name}</span>
-                    <button onClick={() => handleRemoveStudent(std.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
+                    <button onClick={() => handleRemoveStudent(std.id)} style={{ background: 'none', border: 'none', color: COLOR_RED, cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -779,10 +842,10 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid COLOR_BORDER', backgroundColor: COLOR_BG_FA }}>
             <button
               onClick={handleWipeAllAppData}
-              style={{ width: '100%', backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{ width: '100%', backgroundColor: 'transparent', color: COLOR_RED, border: '1px solid COLOR_RED_BORDER', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
               <AlertTriangle size={14} /> Tilbakestill / Slett all appdata
             </button>
@@ -790,34 +853,34 @@ export default function App() {
         </div>
 
         {/* Hovedinnhold */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: COLOR_BG_MAIN, overflow: 'hidden' }}>
 
-          <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ backgroundColor: COLOR_WHITE, borderBottom: '1px solid COLOR_BORDER', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: COLOR_TEXT_MAIN, margin: 0 }}>
                 {currentClass ? currentClass.name : 'Velg en klasse'}
               </h2>
               {currentClass && (
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <button
                     onClick={() => setShowChartDropdown(!showChartDropdown)}
-                    style={{ fontSize: '0.85rem', fontWeight: 700, padding: '6px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#eff6ff', color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+                    style={{ fontSize: '0.85rem', fontWeight: 700, padding: '6px 12px', borderRadius: '8px', border: 'none', backgroundColor: COLOR_BG_LIGHT_BLUE, color: COLOR_PRIMARY, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                   >
                     {currentClassroom?.name || 'Velg klasserom'}
-                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{showChartDropdown ? '▲' : '▼'}</span>
+                    <span style={{ fontSize: '0.7rem', color: COLOR_TEXT_MUTED }}>{showChartDropdown ? '▲' : '▼'}</span>
                   </button>
                   {showChartDropdown && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, backgroundColor: '#ffffff', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', padding: '6px', minWidth: '220px', zIndex: 60, border: '1px solid #e2e8f0' }}>
+                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, backgroundColor: COLOR_WHITE, borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.12)', padding: '6px', minWidth: '220px', zIndex: 60, border: '1px solid COLOR_BORDER' }}>
                       {currentClass.classrooms.map((room) => (
                         <button
                           key={room.id}
                           onClick={() => { handleSelectChart(room.id); setShowChartDropdown(false); }}
-                          style={{ width: '100%', textAlign: 'left', backgroundColor: room.id === selectedClassroomId ? '#eff6ff' : 'transparent', border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}
+                          style={{ width: '100%', textAlign: 'left', backgroundColor: room.id === selectedClassroomId ? COLOR_BG_LIGHT_BLUE : 'transparent', border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 600, color: COLOR_TEXT_MAIN, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}
                         >
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleRemoveChart(room.id, e); }}
-                            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '2px', marginLeft: '8px', flexShrink: 0 }}
+                            style={{ background: 'none', border: 'none', color: COLOR_RED, cursor: 'pointer', padding: '2px', marginLeft: '8px', flexShrink: 0 }}
                             title="Slett klasserom"
                             disabled={currentClass.classrooms.length <= 1}
                           >
@@ -825,10 +888,10 @@ export default function App() {
                           </button>
                         </button>
                       ))}
-                      <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '4px 0' }} />
+                      <div style={{ height: '1px', backgroundColor: COLOR_BORDER, margin: '4px 0' }} />
                       <button
                         onClick={() => { handleAddChart(); setShowChartDropdown(false); }}
-                        style={{ width: '100%', textAlign: 'left', backgroundColor: '#059669', border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        style={{ width: '100%', textAlign: 'left', backgroundColor: COLOR_GREEN_BTN, border: 'none', borderRadius: '6px', padding: '8px 10px', fontSize: '0.85rem', fontWeight: 700, color: COLOR_WHITE, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
                         <Plus size={16} /> Legg til nytt klasserom
                       </button>
@@ -842,22 +905,22 @@ export default function App() {
               {currentClass && (
                 <button
                   onClick={() => setShowExportModal(true)}
-                  style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                  style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 3px COLOR_SHADOW_MED' }}
                 >
                   <Printer size={16} /> Skriv ut / Lagre kart
                 </button>
               )}
 
-              <div style={{ display: 'flex', background: '#e2e8f0', padding: '4px', borderRadius: '10px', gap: '4px' }}>
+              <div style={{ display: 'flex', background: COLOR_BORDER, padding: '4px', borderRadius: '10px', gap: '4px' }}>
                 <button
                   onClick={() => { setMode('view'); setActiveBlockId(null); }}
-                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'view' ? '#ffffff' : 'transparent', color: mode === 'view' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'view' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'view' ? COLOR_WHITE : 'transparent', color: mode === 'view' ? COLOR_PRIMARY : COLOR_TEXT_DARK, fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'view' ? '0 1px 3px COLOR_SHADOW_MED' : 'none' }}
                 >
                   <MousePointer size={15} /> Plassér elever
                 </button>
                 <button
                   onClick={() => { setMode('edit'); setActiveBlockId(null); }}
-                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'edit' ? '#ffffff' : 'transparent', color: mode === 'edit' ? '#2563eb' : '#475569', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'edit' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                  style={{ fontSize: '0.85rem', padding: '8px 14px', background: mode === 'edit' ? COLOR_WHITE : 'transparent', color: mode === 'edit' ? COLOR_PRIMARY : COLOR_TEXT_DARK, fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: mode === 'edit' ? '0 1px 3px COLOR_SHADOW_MED' : 'none' }}
                 >
                   <Move size={15} /> Bygg / Flytt pulter
                 </button>
@@ -866,28 +929,28 @@ export default function App() {
           </div>
 
           {mode === 'edit' && currentChart && (
-            <div style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>Legg til pulter:</span>
+            <div style={{ backgroundColor: COLOR_BG_LIGHT, borderBottom: '1px solid COLOR_BORDER', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: COLOR_TEXT_SLATE, textTransform: 'uppercase' }}>Legg til pulter:</span>
 
-              <button onClick={() => handleAddGroupShape(1)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={() => handleAddGroupShape(1)} style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 1 Pult
               </button>
-              <button onClick={() => handleAddGroupShape(2)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={() => handleAddGroupShape(2)} style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 2-pult
               </button>
-              <button onClick={() => handleAddGroupShape(3)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={() => handleAddGroupShape(3)} style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 3-pult
               </button>
-              <button onClick={() => handleAddGroupShape(4)} style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={() => handleAddGroupShape(4)} style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
                 + 4-pult (Firkant)
               </button>
 
-              <div style={{ height: '20px', width: '2px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
+              <div style={{ height: '20px', width: '2px', backgroundColor: COLOR_BORDER_LIGHT, margin: '0 4px' }} />
 
               <button
                 onClick={() => setSnapToGridEnabled(!snapToGridEnabled)}
                 style={{
-                  backgroundColor: snapToGridEnabled ? '#059669' : '#475569',
+                  backgroundColor: snapToGridEnabled ? COLOR_GREEN_BTN : COLOR_TEXT_DARK,
                   color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
                 }}
               >
@@ -896,7 +959,7 @@ export default function App() {
 
               <div style={{ flex: 1 }} />
 
-              <button onClick={handleClearAllBlocks} style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button onClick={handleClearAllBlocks} style={{ backgroundColor: COLOR_RED_BG, color: COLOR_RED, border: '1px solid COLOR_RED_BORDER', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Trash2 size={16} /> Slett alle pulter
               </button>
             </div>
@@ -935,8 +998,8 @@ export default function App() {
                   }
                 }}
                 style={{
-                  position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: '#f0f9ff', borderRadius: '16px', border: '2px solid #bae6fd', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden',
-                  backgroundImage: 'radial-gradient(#38bdf8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', flexShrink: 0, margin: 'auto'
+                  position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: COLOR_CANVAS_BG, borderRadius: '16px', border: '2px solid COLOR_CANVAS_BORDER', boxShadow: '0 10px 15px -3px COLOR_SHADOW_LIGHT', overflow: 'hidden',
+                  backgroundImage: 'radial-gradient(COLOR_DOT_GRID 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', flexShrink: 0, margin: 'auto'
                 }}
               >
                 {currentChart.blocks.map((blk) => {
@@ -1023,18 +1086,18 @@ export default function App() {
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                         cursor: mode === 'edit' ? 'grab' : (isFront ? 'default' : 'pointer'),
-                        backgroundColor: isFront ? '#4f46e5' : (dragOverBlockId === blk.id ? '#047857' : (assignedStudent ? '#2563eb' : '#10b981')),
-                        boxShadow: dragOverBlockId === blk.id ? '0 0 0 3px rgba(4,120,87,0.6)' : '0 4px 6px -1px rgba(0,0,0,0.08)',
+                        backgroundColor: isFront ? COLOR_FRONT_BG : (dragOverBlockId === blk.id ? COLOR_GREEN : (assignedStudent ? COLOR_PRIMARY : COLOR_GREEN_LIGHT)),
+                        boxShadow: dragOverBlockId === blk.id ? '0 0 0 3px COLOR_GREEN_RING' : '0 4px 6px -1px rgba(0,0,0,0.08)',
                         transition: isDragging ? 'none' : 'background-color 0.15s'
                       }}
                       title={isFront ? 'Klasserommets (Tavle) - kan flyttes i redigeringsmodus' : (mode === 'edit' ? 'Høyreklikk for å slette, dobbeltklikk for å ufeste' : '')}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? '#c7d2fe' : (assignedStudent ? '#93c5fd' : '#a7f3d0'), textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? COLOR_FRONT_TEXT : (assignedStudent ? COLOR_BLUE_LIGHT_TEXT : COLOR_GREEN_LIGHT_TEXT), textTransform: 'uppercase' }}>
                           {isFront ? 'Felles' : 'Pult'}
                         </span>
                       </div>
-                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
+                      <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: COLOR_WHITE, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
                         {isFront ? 'TAVLE' : (assignedStudent ? assignedStudent.name : 'Ledig')}
                       </div>
                     </div>
@@ -1042,17 +1105,17 @@ export default function App() {
                 })}
               </div>
             ) : (
-              <div style={{ color: '#64748b', fontSize: '1rem', fontWeight: 600 }}>
+              <div style={{ color: COLOR_TEXT_MUTED, fontSize: '1rem', fontWeight: 600 }}>
                 Opprett en klasse i menyen til venstre for å begynne.
               </div>
             )}
 
             {/* Elevvalg-meny ved klikk på pult */}
             {mode === 'view' && activeBlockId && currentClass && (
-              <div style={{ position: 'absolute', right: '20px', top: '20px', width: '260px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
+              <div style={{ position: 'absolute', right: '20px', top: '20px', width: '260px', backgroundColor: COLOR_WHITE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '16px', zIndex: 50 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563eb', margin: 0 }}>Velg elev til pult:</h3>
-                  <button onClick={() => setActiveBlockId(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
+                  <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: COLOR_PRIMARY, margin: 0 }}>Velg elev til pult:</h3>
+                  <button onClick={() => setActiveBlockId(null)} style={{ background: 'none', border: 'none', color: COLOR_TEXT_MUTED, cursor: 'pointer' }}>
                     <X size={18} />
                   </button>
                 </div>
@@ -1060,7 +1123,7 @@ export default function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '260px', overflowY: 'auto' }}>
                   <button
                     onClick={() => handleAssignStudent(null)}
-                    style={{ textAlign: 'left', backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid #fecaca', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ textAlign: 'left', backgroundColor: COLOR_RED_BG, color: COLOR_RED, fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid COLOR_RED_BORDER', cursor: 'pointer', fontWeight: 700 }}
                   >
                     Tøm pult
                   </button>
@@ -1070,7 +1133,7 @@ export default function App() {
                     placeholder="Søk elev..."
                     value={searchStudent}
                     onChange={(e) => setSearchStudent(e.target.value)}
-                    style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: '#0f172a', outline: 'none', marginBottom: '6px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', backgroundColor: COLOR_WHITE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', color: COLOR_TEXT_MAIN, outline: 'none', marginBottom: '6px', boxSizing: 'border-box' }}
                   />
 
                   {currentClass.students
@@ -1087,13 +1150,13 @@ export default function App() {
                           key={std.id}
                           onClick={() => handleAssignStudent(std.id)}
                           style={{
-                            textAlign: 'left', backgroundColor: '#f8fafc', color: '#0f172a', fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer',
+                            textAlign: 'left', backgroundColor: COLOR_BG_MAIN, color: COLOR_TEXT_MAIN, fontSize: '0.85rem', padding: '8px 12px', borderRadius: '6px', border: '1px solid COLOR_BORDER', cursor: 'pointer',
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600
                           }}
                         >
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{std.name}</span>
-                          {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>Sitter her</span>}
-                          {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>(Opptatt)</span>}
+                          {isSeatedOnThisBlock && <span style={{ fontSize: '10px', color: COLOR_GREEN_OK, fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>Sitter her</span>}
+                          {!isSeatedOnThisBlock && isSeatedElsewhere && <span style={{ fontSize: '10px', color: COLOR_AMBER, fontWeight: 700, flexShrink: 0, marginLeft: '4px' }}>(Opptatt)</span>}
                         </button>
                       );
                     })}
@@ -1120,7 +1183,7 @@ export default function App() {
                 width: '280px',
                 bottom: 0,
               }),
-              backgroundColor: 'rgba(0,0,0,0.4)',
+              backgroundColor: COLOR_OVERLAY_DARK,
               pointerEvents: 'auto'
             }} />
 
@@ -1138,7 +1201,7 @@ export default function App() {
                 transform: 'none',
                 width: '256px',
               }),
-              backgroundColor: '#ffffff',
+              backgroundColor: COLOR_WHITE,
               borderRadius: '16px',
               maxWidth: '90vw',
               maxHeight: 'calc(100vh - 24px)',
@@ -1147,9 +1210,9 @@ export default function App() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              boxShadow: '0 25px 50px -12px COLOR_SHADOW_MODAL',
               pointerEvents: 'auto',
-              border: '1px solid #cbd5e1',
+              border: '1px solid COLOR_BORDER_LIGHT',
               boxSizing: 'border-box',
               transition: 'all 0.3s ease'
             }}>
@@ -1159,25 +1222,25 @@ export default function App() {
                   setShowTutorial(false);
                   localStorage.setItem('klassekart_seen_tutorial', 'true');
                 }}
-                style={{ position: 'absolute', right: tutorialStep <= 2 ? '20px' : '12px', top: tutorialStep <= 2 ? '20px' : '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: tutorialStep <= 2 ? '20px' : '12px', top: tutorialStep <= 2 ? '20px' : '12px', background: 'none', border: 'none', color: COLOR_TEXT_MUTED, cursor: 'pointer' }}
               >
                 <X size={tutorialStep <= 2 ? 22 : 18} />
               </button>
 
-              <div style={{ marginBottom: tutorialStep <= 2 ? '20px' : '12px', backgroundColor: '#f0f9ff', padding: tutorialStep <= 2 ? '20px' : '12px', borderRadius: '50%' }}>
+              <div style={{ marginBottom: tutorialStep <= 2 ? '20px' : '12px', backgroundColor: COLOR_CANVAS_BG, padding: tutorialStep <= 2 ? '20px' : '12px', borderRadius: '50%' }}>
                 {tutorialSteps[tutorialStep].icon}
               </div>
 
-              <h2 style={{ fontSize: tutorialStep <= 2 ? '1.4rem' : '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: tutorialStep <= 2 ? '1.4rem' : '1.1rem', fontWeight: 800, color: COLOR_TEXT_MAIN, marginBottom: '8px', textAlign: 'center' }}>
                 {tutorialSteps[tutorialStep].title}
               </h2>
 
-              <div style={{ fontSize: tutorialStep <= 2 ? '0.95rem' : '0.82rem', color: '#475569', textAlign: 'left', lineHeight: '1.5', marginBottom: '20px', padding: '0 4px', whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+              <div style={{ fontSize: tutorialStep <= 2 ? '0.95rem' : '0.82rem', color: COLOR_TEXT_DARK, textAlign: 'left', lineHeight: '1.5', marginBottom: '20px', padding: '0 4px', whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                 {tutorialSteps[tutorialStep].desc}
               </div>
 
               {isInteractiveTutorial && !isCurrentStepCompleted() && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.78rem', fontWeight: 700, marginBottom: '14px', backgroundColor: '#fef3c7', padding: '6px 10px', borderRadius: '8px', width: '100%', justifyContent: 'center', boxSizing: 'border-box', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: COLOR_AMBER, fontSize: '0.78rem', fontWeight: 700, marginBottom: '14px', backgroundColor: COLOR_WARN_BG, padding: '6px 10px', borderRadius: '8px', width: '100%', justifyContent: 'center', boxSizing: 'border-box', textAlign: 'center' }}>
                   <Lock size={13} /> Gjør handlingen for å låse opp neste!
                 </div>
               )}
@@ -1190,7 +1253,7 @@ export default function App() {
                       width: tutorialStep === idx ? '20px' : '6px',
                       height: '6px',
                       borderRadius: '3px',
-                      backgroundColor: tutorialStep === idx ? '#2563eb' : '#cbd5e1',
+                      backgroundColor: tutorialStep === idx ? COLOR_PRIMARY : COLOR_BORDER_LIGHT,
                       transition: 'all 0.3s'
                     }}
                   />
@@ -1202,7 +1265,7 @@ export default function App() {
                   onClick={() => setTutorialStep(prev => Math.max(0, prev - 1))}
                   disabled={tutorialStep === 0}
                   style={{
-                    flex: 1, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: tutorialStep === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: tutorialStep === 0 ? 0.5 : 1
+                    flex: 1, backgroundColor: COLOR_BG_LIGHT, color: COLOR_TEXT_SLATE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: tutorialStep === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: tutorialStep === 0 ? 0.5 : 1
                   }}
                 >
                   <ArrowLeft size={14} /> Forrige
@@ -1218,7 +1281,7 @@ export default function App() {
                     disabled={isInteractiveTutorial && !isCurrentStepCompleted()}
                     style={{
                       flex: 1,
-                      backgroundColor: isInteractiveTutorial && !isCurrentStepCompleted() ? '#94a3b8' : '#2563eb',
+                      backgroundColor: isInteractiveTutorial && !isCurrentStepCompleted() ? COLOR_DISABLED : COLOR_PRIMARY,
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
@@ -1242,7 +1305,7 @@ export default function App() {
                       localStorage.setItem('klassekart_seen_tutorial', 'true');
                     }}
                     style={{
-                      flex: 1, backgroundColor: '#059669', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                      flex: 1, backgroundColor: COLOR_GREEN_BTN, color: 'white', border: 'none', borderRadius: '8px', padding: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
                     }}
                   >
                     Start! <CheckCircle2 size={14} />
@@ -1259,7 +1322,7 @@ export default function App() {
                   marginTop: '10px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#64748b',
+                  color: COLOR_TEXT_MUTED,
                   fontSize: '0.75rem',
                   cursor: 'pointer',
                   textDecoration: 'underline'
@@ -1274,27 +1337,27 @@ export default function App() {
 
         {/* Eksport / Utskrifts-modal */}
         {showExportModal && (
-          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '1150px', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: COLOR_BACKDROP, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
+            <div style={{ backgroundColor: COLOR_WHITE, borderRadius: '16px', width: '1150px', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
 
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Skriv ut / lagre kart</h3>
-                <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid COLOR_BORDER', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: COLOR_TEXT_MAIN, margin: 0 }}>Skriv ut / lagre kart</h3>
+                <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', color: COLOR_TEXT_MUTED, cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
               </div>
 
-              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: COLOR_BG_MAIN }}>
                 <div
                   ref={printAreaRef}
                   id="printable-area"
                   style={{
-                    position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '20px', flexShrink: 0
+                    position: 'relative', width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, backgroundColor: COLOR_WHITE, borderRadius: '12px', border: '1px solid COLOR_BORDER_LIGHT', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '20px', flexShrink: 0
                   }}
                 >
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Klassekart: {currentClass?.name}</h2>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Dato: {new Date().toLocaleDateString('nb-NO')}</p>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: COLOR_TEXT_MAIN, margin: 0 }}>Klassekart: {currentClass?.name}</h2>
+                    <p style={{ fontSize: '0.85rem', color: COLOR_TEXT_MUTED, margin: '4px 0 0 0' }}>Dato: {new Date().toLocaleDateString('nb-NO')}</p>
                   </div>
                   <div style={{ position: 'relative', width: '100%', height: '580px' }}>
                     {currentChart?.blocks.map((blk) => {
@@ -1315,14 +1378,14 @@ export default function App() {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            backgroundColor: isFront ? '#4338ca' : '#2563eb',
+                            backgroundColor: isFront ? COLOR_FRONT_DARK : COLOR_PRIMARY,
                             boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                           }}
                         >
-                          <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? '#c7d2fe' : '#93c5fd', textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: '6px', fontWeight: 800, color: isFront ? COLOR_FRONT_TEXT : COLOR_BLUE_LIGHT_TEXT, textTransform: 'uppercase' }}>
                             {isFront ? 'Felles' : 'Pult'}
                           </span>
-                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
+                          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: isFront ? '0.8rem' : getDynamicFontSize(assignedStudent ? assignedStudent.name : ''), color: COLOR_WHITE, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', lineHeight: '1.1', width: '100%' }}>
                             {isFront ? 'FRONT / TAVLE' : (assignedStudent ? assignedStudent.name : 'Ledig')}
                           </div>
                         </div>
@@ -1332,16 +1395,16 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: '#ffffff' }}>
+              <div style={{ padding: '16px 24px', borderTop: '1px solid COLOR_BORDER', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: COLOR_WHITE }}>
                 <button
                   onClick={handleCopyClipboard}
-                  style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 16px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ backgroundColor: COLOR_BG_LIGHT, color: COLOR_TEXT_SLATE, border: '1px solid COLOR_BORDER_LIGHT', borderRadius: '8px', padding: '10px 16px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Copy size={16} /> Kopier som tekst
                 </button>
                 <button
                   onClick={handlePrint}
-                  style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ backgroundColor: COLOR_PRIMARY, color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Printer size={16} /> Skriv ut / PDF
                 </button>
@@ -1353,7 +1416,7 @@ export default function App() {
 
       </div>
 
-      <div style={{ position: 'fixed', bottom: 0, right: 0, padding: '6px 12px', backgroundColor: 'transparent', color: '#9ca3af', fontSize: '0.65rem', fontWeight: 400, zIndex: 1000, pointerEvents: 'none', letterSpacing: '0.02em' }}>
+      <div style={{ position: 'fixed', bottom: 0, right: 0, padding: '6px 12px', backgroundColor: 'transparent', color: COLOR_TEXT_SMALL, fontSize: '0.65rem', fontWeight: 400, zIndex: 1000, pointerEvents: 'none', letterSpacing: '0.02em' }}>
         Noah Belstad © MIT license
       </div>
     </>
