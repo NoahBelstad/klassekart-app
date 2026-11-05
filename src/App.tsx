@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { toPng } from "html-to-image";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import {
   Plus,
   LayoutGrid,
@@ -19,6 +22,8 @@ import {
   Lock,
   Moon,
   Sun,
+  Download,
+  FileText
 } from "lucide-react";
 
 // ---------------------------------------------------------------
@@ -124,6 +129,32 @@ export default function App() {
     const saved = localStorage.getItem("klassekart_snap_grid");
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  const handleExportPDF = async () => {
+    if (!printAreaRef.current) return;
+
+    try {
+      // 1. Gjør elementet om til et canvas-bilde
+      const canvas = await html2canvas(printAreaRef.current, {
+        scale: 2, // Høyere kvalitet/oppløsning
+        useCORS: true, // Tillater eksterne bilder hvis du har bakgrunnsbilder
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [canvas.width, canvas.height],
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`klassekart_${currentClass?.name || "eksport"}.pdf`);
+    } catch (error) {
+      console.error("Feil ved generering av PDF:", error);
+    }
+  };
 
   const [showChartDropdown, setShowChartDropdown] = useState(false);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
@@ -705,6 +736,21 @@ export default function App() {
       }),
     }));
     setActiveBlockId(null);
+  };
+
+  const handleExportPNG = () => {
+    if (printAreaRef.current) {
+      toPng(printAreaRef.current, { cacheBust: true })
+        .then((dataUrl) => {
+          const link = document.createElement("a");
+          link.download = "klassekart.png";
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          console.error("Feil ved generering av PNG:", err);
+        });
+    }
   };
 
   const getTableBlockStyle = (
@@ -3173,7 +3219,46 @@ export default function App() {
                           gap: "6px",
                         }}
                       >
-                        <Printer size={16} /> Skriv ut / PDF
+                        <Printer size={16} /> Skriv ut
+                      </button>
+                      {/* 2. Lagre som PNG */}
+                      <button
+                        onClick={handleExportPNG}
+                        style={{
+                          backgroundColor: COLOR_PRIMARY,
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "10px 16px",
+                          fontSize: "0.9rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <Download size={16} /> Lagre PNG
+                      </button>
+
+                      {/* 3. Lagre som PDF */}
+                      <button
+                        onClick={handleExportPDF}
+                        style={{
+                          backgroundColor: COLOR_PRIMARY,
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "10px 16px",
+                          fontSize: "0.9rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <FileText size={16} /> Lagre PDF
                       </button>
                     </div>
                   </div>
